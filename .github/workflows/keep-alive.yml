@@ -1,0 +1,14 @@
+# Render's free web service sleeps after 15 minutes idle, and the first request then takes
+# ~1 minute. Pinging every 10 minutes during kitchen hours (07:00–23:00 IST) keeps it awake
+# when the family uses it, and stays inside the free 750 instance-hours a month.
+name: keep-alive
+on:
+  schedule:
+    - cron: '*/10 1-17 * * *' # UTC; 01:30–17:30 UTC is 07:00–23:00 IST
+  workflow_dispatch:
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    if: vars.API_URL != ''
+    steps:
+      - run: curl --fail --silent --show-error --max-time 90 "${{ vars.API_URL }}/health/live"
