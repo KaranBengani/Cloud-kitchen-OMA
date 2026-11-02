@@ -2,6 +2,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { Tabs } from 'expo-router';
 import type { ComponentProps } from 'react';
 import type { ColorValue } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useI18n } from '@/lib/i18n';
 import { colors } from '@/lib/theme';
 
@@ -13,6 +14,7 @@ const icon = (name: IconName) =>
 
 export default function TabsLayout() {
   const { t } = useI18n();
+  const { bottom } = useSafeAreaInsets();
   return (
     <Tabs
       screenOptions={{
@@ -20,7 +22,7 @@ export default function TabsLayout() {
         tabBarActiveTintColor: colors.brand,
         tabBarInactiveTintColor: colors.muted,
         tabBarLabelStyle: { fontSize: 13 },
-        tabBarStyle: { height: 64, paddingTop: 6 },
+        tabBarStyle: { height: 64 + bottom, paddingTop: 6, paddingBottom: bottom },
       }}
     >
       <Tabs.Screen name="index" options={{ title: t('tabs.orders'), tabBarIcon: icon('calendar') }} />
