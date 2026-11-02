@@ -16,7 +16,7 @@ and every native module V1a needs already included. After that, every feature re
 Native changes later would need a reinstall, which can't happen in person again before 15 Nov.
 - [ ] Monorepo scaffold: `apps/mobile` (Expo), `apps/api` (NestJS), shared lint/format, local Postgres via Docker
 - [x] API: TypeORM config, first migration, health endpoint, PIN auth
-- [ ] DB + API: menu items (CRUD), seeded from the current Canva menu
+- [x] DB + API: menu items (CRUD), seeded from the current Canva menu
 - [ ] DB + API: customers (name, phone, address), search by name or phone
 - [ ] DB + API: orders + order items (price snapshot + override, order-level notes, delivery date and time, status), optimistic locking
 - [ ] DB + API: payments (Cash / UPI Papa / UPI Mummy, advance) and balance due

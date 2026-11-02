@@ -7,6 +7,7 @@ import { AuthModule } from './auth/auth.module.js';
 import { type Env, validateEnv } from './config/env.js';
 import { typeormOptions } from './database/typeorm.options.js';
 import { HealthController } from './health/health.controller.js';
+import { MenuModule } from './menu/menu.module.js';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { HealthController } from './health/health.controller.js';
     // Default rate limit for every route; the login route sets a stricter one.
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 120 }]),
     AuthModule,
+    MenuModule,
   ],
   controllers: [HealthController],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
