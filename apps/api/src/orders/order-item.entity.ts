@@ -21,7 +21,8 @@ export class OrderItem {
   @Column({ name: 'order_id', type: 'integer' })
   orderId: number;
 
-  // Kept for reporting ("how many Khandvi did we sell?"); null if the menu item is ever hard-deleted.
+  // Kept for reporting ("how many Khandvi did we sell?"). Null for a custom, off-menu line
+  // (DECISIONS.md D14), or if the menu item is ever hard-deleted.
   @ManyToOne(() => MenuItem, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'menu_item_id' })
   menuItem: MenuItem | null;
@@ -39,6 +40,7 @@ export class OrderItem {
   qty: number;
 
   // Menu price at order time, kept so the bill can show "₹440 → ₹400" for an override.
+  // For a custom line there is no menu price, so it equals the typed unit price.
   @Column({ name: 'menu_price_paise', type: 'integer' })
   menuPricePaise: number;
 

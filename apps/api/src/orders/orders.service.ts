@@ -8,10 +8,10 @@ import type { CreateOrderDto, OrderInput, PaymentInput, UpdateOrderDto, UpdateSt
 import { OrderItem } from './order-item.entity.js';
 import { Order } from './order.entity.js';
 import { Payment } from './payment.entity.js';
-import { priceLines } from './pricing.js';
+import { priceOrder } from './pricing.js';
 
 // What the app receives: the order plus money figures it would otherwise have to compute itself.
-export type OrderView = Order & { paidPaise: number; balancePaise: number };
+export type OrderView = Order & { subtotalPaise: number; paidPaise: number; balancePaise: number };
 
 export interface DueRow {
   orderId: number;
@@ -55,10 +55,16 @@ export class OrdersService {
   create(dto: CreateOrderDto): Promise<OrderView> {
     return this.db.transaction(async (tx) => {
       await this.assertCustomer(tx, dto.customerId);
-      const { lines, totalPaise } = await this.buildLines(tx, dto);
+      const { lines, discountPaise, totalPaise } = await this.buildLines(tx, dto);
 
       const order = await tx.getRepository(Order).save(
-        tx.getRepository(Order).create({ ...this.orderFields(dto), totalPaise, status: 'booked', version: 1 }),
+        tx.getRepository(Order).create({
+          ...this.orderFields(dto),
+          discountPaise,
+          totalPaise,
+          status: 'booked',
+          version: 1,
+        }),
       );
       await tx.getRepository(OrderItem).insert(lines.map((l) => ({ ...l, orderId: order.id })));
       if (dto.advance) await this.insertPayment(tx, order.id, { isAdvance: true, ...dto.advance });
@@ -71,9 +77,9 @@ export class OrdersService {
     return this.db.transaction(async (tx) => {
       await this.assertCustomer(tx, dto.customerId);
       const previous = await tx.getRepository(OrderItem).findBy({ orderId: id });
-      const { lines, totalPaise } = await this.buildLines(tx, dto, previous);
+      const { lines, discountPaise, totalPaise } = await this.buildLines(tx, dto, previous);
 
-      await this.updateWithVersion(tx, id, dto.version, { ...this.orderFields(dto), totalPaise });
+      await this.updateWithVersion(tx, id, dto.version, { ...this.orderFields(dto), discountPaise, totalPaise });
       // Replace all lines: simpler than diffing, and safe because we hold the order's row lock
       // (taken by the UPDATE above) until this transaction commits.
       await tx.getRepository(OrderItem).delete({ orderId: id });
@@ -158,29 +164,49 @@ export class OrdersService {
 
   // Snapshots name, unit and price from the menu (DECISIONS.md D7). When editing, lines that were
   // already on the order keep their original menu price, so a menu price change since booking
-  // doesn't silently reprice an existing order.
+  // doesn't silently reprice an existing order. Custom lines (no menuItemId, D14) use what was typed.
   private async buildLines(tx: EntityManager, dto: OrderInput, previous: OrderItem[] = []) {
-    const ids = [...new Set(dto.items.map((i) => i.menuItemId))];
+    const ids = [...new Set(dto.items.flatMap((i) => (i.menuItemId == null ? [] : [i.menuItemId])))];
     // withDeleted: an item removed from the menu can still appear on an order booked before that.
-    const menu = await tx.getRepository(MenuItem).find({ where: { id: In(ids) }, withDeleted: true });
+    const menu = ids.length
+      ? await tx.getRepository(MenuItem).find({ where: { id: In(ids) }, withDeleted: true })
+      : [];
     const byId = new Map(menu.map((m) => [m.id, m]));
     const missing = ids.filter((id) => !byId.has(id));
     if (missing.length) throw new BadRequestException(`Unknown menu items: ${missing.join(', ')}`);
 
     const previousPrice = new Map(previous.map((p) => [p.menuItemId, p.menuPricePaise]));
-    const { lines, totalPaise } = priceLines(
-      dto.items.map((i) => ({
-        qty: i.qty,
-        menuPricePaise: previousPrice.get(i.menuItemId) ?? byId.get(i.menuItemId)!.pricePaise,
-        unitPricePaise: i.unitPricePaise,
-      })),
-    );
+    // Name, unit and menu price for each line, from the menu or from the custom line itself.
+    const sources = dto.items.map((i) => {
+      if (i.menuItemId == null) {
+        return { menuItemId: null, name: i.name!.trim(), unit: i.unit!, menuPricePaise: i.unitPricePaise! };
+      }
+      const item = byId.get(i.menuItemId)!;
+      const menuPricePaise = previousPrice.get(item.id) ?? item.pricePaise;
+      return { menuItemId: item.id, name: item.name, unit: item.unit, menuPricePaise };
+    });
+
+    let priced;
+    try {
+      priced = priceOrder(
+        dto.items.map((i, index) => ({
+          qty: i.qty,
+          menuPricePaise: sources[index].menuPricePaise,
+          unitPricePaise: i.unitPricePaise,
+        })),
+        dto.discountPaise ?? 0,
+      );
+    } catch (error) {
+      if (error instanceof RangeError) throw new BadRequestException(error.message);
+      throw error;
+    }
 
     return {
-      totalPaise,
-      lines: lines.map((l, index) => {
-        const item = byId.get(dto.items[index].menuItemId)!;
-        return { ...l, menuItemId: item.id, name: item.name, unit: item.unit, sortOrder: index };
+      discountPaise: priced.discountPaise,
+      totalPaise: priced.totalPaise,
+      lines: priced.lines.map((l, index) => {
+        const { menuItemId, name, unit } = sources[index];
+        return { ...l, menuItemId, name, unit, sortOrder: index };
       }),
     };
   }
@@ -217,8 +243,9 @@ export class OrdersService {
 function toView(order: Order): OrderView {
   order.items.sort((a, b) => a.sortOrder - b.sortOrder);
   order.payments.sort((a, b) => a.paidOn.localeCompare(b.paidOn) || a.id - b.id);
+  const subtotalPaise = order.totalPaise + order.discountPaise;
   const paidPaise = order.payments.reduce((sum, p) => sum + p.amountPaise, 0);
   // Cancelled orders owe nothing, whatever was paid.
   const balancePaise = order.status === 'cancelled' ? 0 : order.totalPaise - paidPaise;
-  return Object.assign(order, { paidPaise, balancePaise });
+  return Object.assign(order, { subtotalPaise, paidPaise, balancePaise });
 }

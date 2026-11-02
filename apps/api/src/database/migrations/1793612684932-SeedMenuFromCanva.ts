@@ -74,8 +74,8 @@ const MENU: Row[] = [
   ['Ras Malai', DESSERT, 'pc', 30, 10, null],
 ];
 
-export class SeedMenuFromCanva1793700000000 implements MigrationInterface {
-  name = 'SeedMenuFromCanva1793700000000';
+export class SeedMenuFromCanva1793612684932 implements MigrationInterface {
+  name = 'SeedMenuFromCanva1793612684932';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     // Parameterised inserts: never build SQL by concatenating values, even for seed data.

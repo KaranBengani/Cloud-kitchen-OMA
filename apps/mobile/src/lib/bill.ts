@@ -24,8 +24,11 @@ export function billText(order: Order): string {
     '',
     ...lines,
     '',
-    `*Total: ${rupees(order.totalPaise)}*`,
   ];
+  if (order.discountPaise > 0) {
+    parts.push(`Subtotal: ${rupees(order.subtotalPaise)}`, `Discount: −${rupees(order.discountPaise)}`);
+  }
+  parts.push(`*Total: ${rupees(order.totalPaise)}*`);
   if (order.paidPaise > 0) parts.push(`Paid: ${rupees(order.paidPaise)}`);
   if (order.balancePaise > 0) parts.push(`*Balance due: ${rupees(order.balancePaise)}*`);
   if (order.notes) parts.push('', `_Note: ${order.notes}_`);

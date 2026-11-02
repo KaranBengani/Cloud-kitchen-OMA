@@ -25,6 +25,7 @@ export type Fulfilment = (typeof FULFILMENTS)[number];
 @Check('CHK_orders_status', `"status" IN ('booked', 'ready', 'delivered', 'cancelled')`)
 @Check('CHK_orders_fulfilment', `"fulfilment" IN ('pickup', 'parcel')`)
 @Check('CHK_orders_total', `"total_paise" >= 0`)
+@Check('CHK_orders_discount', `"discount_paise" >= 0`)
 @Entity({ name: 'orders' })
 export class Order {
   @PrimaryGeneratedColumn({ type: 'integer' })
@@ -63,8 +64,13 @@ export class Order {
   @Column({ type: 'varchar', length: 12, default: 'booked' })
   status: OrderStatus;
 
-  // Sum of line totals, recomputed by the server on every save inside the same transaction.
-  // Stored (not computed per read) because the order list and dues screen need it constantly.
+  // One optional discount on the whole order (DECISIONS.md D13), on top of any per-line price overrides.
+  @Column({ name: 'discount_paise', type: 'integer', default: 0 })
+  discountPaise: number;
+
+  // What the customer owes: sum of line totals − discount, recomputed by the server on every save
+  // inside the same transaction. Stored (not computed per read) because the order list and dues
+  // screen need it constantly.
   @Column({ name: 'total_paise', type: 'integer' })
   totalPaise: number;
 

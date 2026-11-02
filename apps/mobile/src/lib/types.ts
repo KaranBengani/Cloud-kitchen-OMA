@@ -53,7 +53,9 @@ export interface Order {
   address: string | null;
   notes: string | null;
   status: OrderStatus;
-  totalPaise: number;
+  subtotalPaise: number; // sum of line totals
+  discountPaise: number; // order-level discount (D13)
+  totalPaise: number; // subtotal − discount: what the customer owes
   paidPaise: number;
   balancePaise: number;
   version: number;
@@ -80,8 +82,14 @@ export interface OrderInput {
   fulfilment: Fulfilment;
   address?: string | null;
   notes?: string | null;
-  items: { menuItemId: number; qty: number; unitPricePaise?: number }[];
+  discountPaise?: number;
+  items: OrderLineInput[];
 }
+
+// A menu line, or a custom off-menu line (D14) with its own name, unit and price.
+export type OrderLineInput =
+  | { menuItemId: number; qty: number; unitPricePaise?: number }
+  | { menuItemId?: null; name: string; unit: MenuUnit; qty: number; unitPricePaise: number };
 
 export interface PaymentInput {
   amountPaise: number;

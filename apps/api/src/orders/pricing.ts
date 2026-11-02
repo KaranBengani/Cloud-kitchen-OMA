@@ -13,11 +13,23 @@ export interface PricedLine {
   lineTotalPaise: number;
 }
 
-export function priceLines(lines: PriceInput[]): { lines: PricedLine[]; totalPaise: number } {
+export interface PricedOrder {
+  lines: PricedLine[];
+  subtotalPaise: number;
+  discountPaise: number;
+  totalPaise: number;
+}
+
+// Total = sum of line totals − one optional order-level discount (DECISIONS.md D13).
+export function priceOrder(lines: PriceInput[], discountPaise = 0): PricedOrder {
   const priced = lines.map(({ qty, menuPricePaise, unitPricePaise }) => {
     const unit = unitPricePaise ?? menuPricePaise;
     // Rounded to whole paise: 0.333 kg × ₹400 is 13,320 paise, not 13,320.000000001.
     return { qty, menuPricePaise, unitPricePaise: unit, lineTotalPaise: Math.round(qty * unit) };
   });
-  return { lines: priced, totalPaise: priced.reduce((sum, l) => sum + l.lineTotalPaise, 0) };
+  const subtotalPaise = priced.reduce((sum, l) => sum + l.lineTotalPaise, 0);
+  if (discountPaise > subtotalPaise) {
+    throw new RangeError(`Discount ${discountPaise} is more than the subtotal ${subtotalPaise}`);
+  }
+  return { lines: priced, subtotalPaise, discountPaise, totalPaise: subtotalPaise - discountPaise };
 }
