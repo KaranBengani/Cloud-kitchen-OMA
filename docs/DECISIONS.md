@@ -82,3 +82,19 @@ day one, which is cheap now and expensive to retrofit. Menu item names stay as t
 - Delivery is by third-party parcel services (Uber, Rapido); the **customer pays the courier directly**. Orders store
   fulfilment type (pickup / parcel) and the address, with no delivery charge line.
 - Refunds are rare: cancelling keeps recorded payments; a refund is an explicit negative payment, so totals and dues stay correct.
+
+## D13. Discounts (Accepted, 2 Nov 2026)
+Both: the unit price of any order line can be overridden (D7), **and** an order can carry one optional discount
+amount in paise. Total = sum of line totals − discount. Needs an `orders.discount_paise` column (default 0, ≥ 0,
+≤ subtotal).
+
+## D14. Custom (off-menu) items (Accepted, 2 Nov 2026)
+An order line may have no menu item: name, unit and price are typed on the order and are not added to the menu.
+`order_items.menu_item_id` is already nullable; the DTO gains a custom-item variant.
+
+## D15. Design direction (Accepted, 2 Nov 2026)
+Stitch designs reviewed (see `docs/design/STITCH_REVISION_PROMPT.md`). Rust red primary, mustard highlights, brown text,
+cream background; tall order cards; centre New Order tab. Cut from V1a: header status/avatar, photos, stock tracking,
+printer/KOT, delivery charges, offline mode, kitchen open toggle, PDF/QR bill. The WhatsApp bill has **no UPI line**
+(D10). Note chips: Less spicy, Less oil, No onion-garlic, Extra chutney, Separate boxes. P&L and expenses designs are kept
+in `docs/design/v1b/` for Phase 3.
