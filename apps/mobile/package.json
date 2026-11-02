@@ -47,7 +47,9 @@
     "start": "expo start",
     "android": "expo run:android",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "update:staging": "APP_VARIANT=staging npx --yes eas-cli@27.2.0 update --channel preview --environment preview --platform android",
+    "update:production": "npx --yes eas-cli@27.2.0 update --channel production --environment production --platform android"
   },
   "private": true
 }

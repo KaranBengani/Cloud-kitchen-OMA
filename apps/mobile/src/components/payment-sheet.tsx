@@ -10,7 +10,7 @@ import { PAYMENT_MODES, type PaymentMode } from '@/lib/types';
 import { rupeesToPaise } from './order-form/cart';
 import { Button, Chip, FormError, Icon, type IconName, Sheet } from './ui';
 
-const MODE_ICON: Record<PaymentMode, IconName> = {
+export const MODE_ICON: Record<PaymentMode, IconName> = {
   cash: 'cash-outline',
   upi_papa: 'phone-portrait-outline',
   upi_mummy: 'wallet-outline',

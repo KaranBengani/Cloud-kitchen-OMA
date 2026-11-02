@@ -1,7 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { PaymentSheet } from '@/components/payment-sheet';
+import { MODE_ICON, PaymentSheet } from '@/components/payment-sheet';
 import { Screen } from '@/components/screen';
 import { Badge, Button, Card, ErrorState, Icon, Skeleton, StatusBadge } from '@/components/ui';
 import { ApiError } from '@/lib/api';
@@ -205,7 +205,7 @@ function OrderDetail({ order, onReload }: { order: Order; onReload: () => void }
           {order.payments.length === 0 ? <Text style={styles.muted}>{t('order.noPayments')}</Text> : null}
           {order.payments.map((p) => (
             <Pressable key={p.id} onLongPress={() => removePayment(p)} style={styles.payment}>
-              <Icon name={p.amountPaise < 0 ? 'arrow-undo-outline' : 'cash-outline'} color={colors.muted} />
+              <Icon name={p.amountPaise < 0 ? 'arrow-undo-outline' : MODE_ICON[p.mode]} color={colors.muted} />
               <View style={styles.flex}>
                 <Text style={styles.strong}>
                   {t(`mode.${p.mode}`)}
