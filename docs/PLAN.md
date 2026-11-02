@@ -14,21 +14,25 @@ hard deadline of **Sun 15 Nov**. V1b due **Sun 20 Dec**.
 **Milestone, Wed 4 Nov (home visit):** an installable APK on all three phones with over-the-air updates working
 and every native module V1a needs already included. After that, every feature reaches parents' phones remotely.
 Native changes later would need a reinstall, which can't happen in person again before 15 Nov.
-- [ ] Monorepo scaffold: `apps/mobile` (Expo), `apps/api` (NestJS), shared lint/format, local Postgres via Docker
+- [x] Monorepo scaffold: `apps/mobile` (Expo), `apps/api` (NestJS), shared lint, local Postgres (Homebrew)
 - [x] API: TypeORM config, first migration, health endpoint, PIN auth
 - [x] DB + API: menu items (CRUD), seeded from the current Canva menu
 - [x] DB + API: customers (name, phone, address), search by name or phone
 - [x] DB + API: orders + order items (price snapshot + override, order-level notes, delivery date and time, status), optimistic locking
 - [x] DB + API: payments (Cash / UPI Papa / UPI Mummy, advance) and balance due
-- [ ] Deploy: API on Render, DB on Neon, keep-alive ping, env secrets
-- [ ] App: PIN screen, English/Hindi toggle, tab layout
-- [ ] App: menu screen (add, edit, hide/show, delete), share menu as WhatsApp text
-- [ ] App: new order flow (customer pick or add → items and quantities → overrides → notes → date and time)
-- [ ] App: order detail + edit (with conflict message), add payment, cancel
-- [ ] App: upcoming orders list + calendar view
-- [ ] App: "Who owes money" screen
-- [ ] App: WhatsApp text bill (opens the customer's chat directly)
-- [ ] EAS build: APK on all three phones, over-the-air updates working
+- [x] Deploy: API on Render, DB on Neon, keep-alive ping, env secrets
+- [x] App: PIN screen, English/Hindi toggle, tab layout
+- [x] App: menu screen (add, edit, hide/show, delete), share menu as WhatsApp text
+- [x] App: new order flow (customer pick or add → items and quantities → overrides → notes → date and time), plus custom items and order discount (D13, D14)
+- [x] App: order detail + edit (with conflict message), add payment, cancel
+- [x] App: upcoming orders list + calendar view
+- [x] App: "Who owes money" screen, including refunds owed on cancelled orders
+- [x] App: WhatsApp text bill (opens the customer's chat directly)
+- [x] Staging: Neon `staging` branch, `oma-api-stg` on Render, "Mummy's Kitchen (Test)" app (D16)
+- [x] EAS production APK built (3 Nov)
+- [ ] Wed 4 Nov, before installing: wipe test customers, orders and payments from production (keep the menu)
+- [ ] Wed 4 Nov: install on all three phones, log in with the family PIN, Mum's phone set to Hindi (see `HOW_TO_USE.md`)
+- [ ] Confirm an over-the-air update reaches an installed phone
 - [ ] Parents take real orders in parallel with the notebook for one week
 - [ ] Fix what real use reveals; drop the notebook when parents are confident
 
