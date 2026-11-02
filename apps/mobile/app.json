@@ -1,0 +1,58 @@
+{
+  "expo": {
+    "name": "Mummy's Kitchen",
+    "slug": "oma",
+    "owner": "karanbengani",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "oma",
+    "userInterfaceStyle": "light",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "android": {
+      "package": "com.karanbengani.oma",
+      "adaptiveIcon": {
+        "backgroundColor": "#C46A22",
+        "foregroundImage": "./assets/images/android-icon-foreground.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#FBF6EE",
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 160
+        }
+      ],
+      "expo-secure-store",
+      "expo-localization",
+      "@react-native-community/datetimepicker",
+      "expo-sharing"
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    },
+    "extra": {
+      "router": {
+        "asyncRoutes": {
+          "web": true
+        }
+      },
+      "eas": {
+        "projectId": "f9328e7d-81b6-4ea5-acc0-c22651da65dc"
+      }
+    },
+    "updates": {
+      "url": "https://u.expo.dev/f9328e7d-81b6-4ea5-acc0-c22651da65dc"
+    },
+    "ios": {
+      "infoPlist": {}
+    }
+  }
+}

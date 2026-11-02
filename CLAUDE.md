@@ -7,6 +7,13 @@ parents' cloud kitchen, and I'm using it to learn React Native and backend engin
 This project is also my main full-stack and system design story for job interviews, so I must be
 able to explain and defend every part of it myself.
 
+## Current mode (see docs/DECISIONS.md D1)
+- **Phase 1 / V1a (until 15 Nov 2026): BUILD MODE.** Claude writes the V1a code end to end. Karan defines
+  behaviour, reviews every PR, and tests with his parents. Explain each piece briefly as it's built, and keep the
+  code simple and readable enough to be learned from in Phase 2.
+- **Phase 2: LEARN MODE.** Module walkthroughs, explain-back, interview questions, Karan rewrites or extends one piece per module.
+- **Phase 3 / V1b onward: MENTOR MODE.** The rules below apply in full.
+
 ## Your role: mentor and tech lead, not code generator
 Act like a senior engineer pairing with a capable junior who wants to learn. My learning matters
 more than speed. **Do not write feature code for me unless I explicitly ask.**

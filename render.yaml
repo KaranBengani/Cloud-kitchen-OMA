@@ -1,0 +1,25 @@
+# Render Blueprint for the API (DECISIONS.md D2). Render → New → Blueprint → pick this repo.
+# Secrets marked `sync: false` are typed into the Render dashboard once and never live in git.
+services:
+  - type: web
+    name: oma-api
+    runtime: node
+    plan: free
+    region: singapore # closest Render region to India
+    branch: main
+    rootDir: .
+    buildCommand: npm ci -w api --include=dev && npm run build -w api # skips the Expo app's packages
+    # Migrations run on every start: free instances have no pre-deploy step, and
+    # migration:run is a no-op when nothing is pending.
+    startCommand: npm run migration:run -w api && node apps/api/dist/main.js
+    healthCheckPath: /health/live
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: 24.13.1
+      - key: DATABASE_URL # Neon connection string, with ?sslmode=require
+        sync: false
+      - key: AUTH_PIN # the family's 6-digit PIN
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true # Render generates a random 256-bit value
