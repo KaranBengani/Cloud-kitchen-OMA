@@ -26,6 +26,8 @@ export default function TabsLayout() {
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.muted,
         tabBarLabelStyle: { fontSize: 13, fontWeight: '600' },
+        // Five labels share the width; with a large phone font they were cut off ("नया ऑ...").
+        tabBarAllowFontScaling: false,
         tabBarStyle: {
           height: 68 + bottom,
           paddingTop: 6,
@@ -52,7 +54,7 @@ export default function TabsLayout() {
               <View style={styles.fab}>
                 <Ionicons name="add" size={34} color={colors.onPrimary} />
               </View>
-              <Text style={styles.newOrderLabel} numberOfLines={1}>
+              <Text style={styles.newOrderLabel} numberOfLines={1} adjustsFontSizeToFit allowFontScaling={false}>
                 {t('tabs.newOrder')}
               </Text>
             </Pressable>
