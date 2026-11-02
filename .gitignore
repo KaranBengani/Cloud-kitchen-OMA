@@ -10,3 +10,4 @@ ios/
 *.apk
 *.aab
 .DS_Store
+*.tsbuildinfo
