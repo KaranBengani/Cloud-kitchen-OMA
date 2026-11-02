@@ -110,8 +110,10 @@ export class OrdersService {
     return this.get(orderId);
   }
 
-  // Who owes money: aggregated in SQL rather than loading every order into memory.
-  // Cancelled orders are excluded; an advance kept on a cancelled order isn't a debt.
+  // Who owes money, and who we owe: aggregated in SQL rather than loading every order into memory.
+  // - Active orders with a balance > 0: the customer owes us.
+  // - Cancelled orders with money still paid on them: a refund is due (balancePaise is negative).
+  //   Recording the refund as a negative payment brings paid to 0 and drops the row.
   async dues(): Promise<DueRow[]> {
     const rows: Record<string, unknown>[] = await this.db.query(`
       -- ::text keeps the date as '2026-11-14'. Without it the pg driver turns DATE into a JS Date at
@@ -122,9 +124,9 @@ export class OrdersService {
       FROM orders o
       JOIN customers c ON c.id = o.customer_id
       LEFT JOIN payments p ON p.order_id = o.id
-      WHERE o.status <> 'cancelled'
       GROUP BY o.id, c.id
-      HAVING o.total_paise - COALESCE(SUM(p.amount_paise), 0) > 0
+      HAVING (o.status <> 'cancelled' AND o.total_paise - COALESCE(SUM(p.amount_paise), 0) > 0)
+          OR (o.status = 'cancelled' AND COALESCE(SUM(p.amount_paise), 0) > 0)
       ORDER BY o.delivery_date ASC, o.id ASC
     `);
     return rows.map((r) => ({
@@ -136,7 +138,8 @@ export class OrdersService {
       customerPhone: r.customer_phone as string | null,
       totalPaise: r.total_paise as number,
       paidPaise: r.paid_paise as number,
-      balancePaise: (r.total_paise as number) - (r.paid_paise as number),
+      balancePaise:
+        r.status === 'cancelled' ? -(r.paid_paise as number) : (r.total_paise as number) - (r.paid_paise as number),
     }));
   }
 
