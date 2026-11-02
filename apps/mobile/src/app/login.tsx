@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Screen } from '@/components/screen';
 import { ApiError } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
-import { colors, font, minTouch, space } from '@/lib/theme';
+import { colors, font, serif, space } from '@/lib/theme';
 
 const PIN_LENGTH = 6;
 const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', '⌫'];
@@ -42,6 +42,7 @@ export default function LoginScreen() {
   return (
     <Screen>
       <View style={styles.header}>
+        <Image source={require('@/assets/images/icon.png')} style={styles.logo} accessibilityIgnoresInvertColors />
         <Text style={styles.app}>{t('appName')}</Text>
         <Text style={styles.title}>{t('login.title')}</Text>
         <View style={styles.dots}>
@@ -50,7 +51,7 @@ export default function LoginScreen() {
           ))}
         </View>
         <View style={styles.status}>
-          {busy ? <ActivityIndicator color={colors.brand} /> : null}
+          {busy ? <ActivityIndicator color={colors.primary} /> : null}
           {error ? <Text style={styles.error}>{error}</Text> : null}
         </View>
       </View>
@@ -67,32 +68,34 @@ export default function LoginScreen() {
           </Pressable>
         ))}
       </View>
+      <Text style={styles.forgot}>{t('login.forgot')}</Text>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  header: { alignItems: 'center', marginTop: space.xl },
-  app: { fontSize: font.huge, fontWeight: '800', color: colors.brand },
+  header: { alignItems: 'center', marginTop: space.lg },
+  logo: { width: 88, height: 88, borderRadius: 44, marginBottom: space.md },
+  app: { fontFamily: serif, fontSize: font.huge, fontWeight: '700', color: colors.text },
   title: { fontSize: font.body, color: colors.muted, marginTop: space.sm },
   dots: { flexDirection: 'row', gap: space.md, marginTop: space.lg },
-  dot: { width: 18, height: 18, borderRadius: 9, borderWidth: 2, borderColor: colors.brand },
-  dotFilled: { backgroundColor: colors.brand },
+  dot: { width: 20, height: 20, borderRadius: 10, backgroundColor: colors.tint, borderWidth: 2, borderColor: colors.border },
+  dotFilled: { backgroundColor: colors.accent, borderColor: colors.accent },
   status: { minHeight: 48, justifyContent: 'center', marginTop: space.md },
-  error: { color: colors.danger, fontSize: font.label, textAlign: 'center' },
-  pad: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', marginTop: 'auto', marginBottom: space.xl },
+  error: { color: colors.danger, fontSize: font.body, fontWeight: '600', textAlign: 'center' },
+  pad: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', marginTop: 'auto', rowGap: space.md },
   key: {
-    width: '30%',
-    minHeight: minTouch + 24,
-    margin: '1.5%',
-    borderRadius: 16,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
+    width: 84,
+    height: 84,
+    borderRadius: 42,
+    marginHorizontal: '5%',
+    // Darker than the design's pale peach: the keys must stand out clearly on the cream background.
+    backgroundColor: '#F8D5C4',
     alignItems: 'center',
     justifyContent: 'center',
   },
   keyHidden: { opacity: 0 },
   keyPressed: { backgroundColor: colors.accent },
-  keyText: { fontSize: font.huge, color: colors.text, fontWeight: '600' },
+  keyText: { fontFamily: serif, fontSize: font.huge, color: colors.text, fontWeight: '700' },
+  forgot: { textAlign: 'center', fontSize: font.label, color: colors.muted, marginVertical: space.lg },
 });

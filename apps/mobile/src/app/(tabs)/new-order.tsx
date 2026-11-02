@@ -1,7 +1,6 @@
-import { ComingSoon } from '@/components/coming-soon';
-import { useI18n } from '@/lib/i18n';
+import { Redirect } from 'expo-router';
 
-export default function Screen() {
-  const { t } = useI18n();
-  return <ComingSoon title={t('tabs.newOrder')} />;
+// The centre tab button pushes /order/form directly; this route only exists so the tab has a slot.
+export default function NewOrderTab() {
+  return <Redirect href="/order/form" />;
 }

@@ -1,5 +1,5 @@
-import { quantity, rupees, shortDate } from './format';
-import type { Order } from './types';
+import { quantity, rupees, shortDate, time12 } from './format';
+import type { Due, MenuItem, Order } from './types';
 
 // The kitchen's details as printed on the Canva menu.
 const KITCHEN = {
@@ -20,7 +20,8 @@ export function billText(order: Order): string {
     KITCHEN.phones.join(' | '),
     '',
     `Bill for: *${order.customer.name}*`,
-    `Order #${order.id} · ${shortDate(order.deliveryDate)}${order.deliveryTime ? `, ${order.deliveryTime}` : ''}`,
+    `Order #${order.id} · ${shortDate(order.deliveryDate)}${order.deliveryTime ? `, ${time12(order.deliveryTime)}` : ''}`,
+    ...(order.fulfilment === 'parcel' && order.address ? [`Delivery: ${order.address}`] : []),
     '',
     ...lines,
     '',
@@ -40,4 +41,30 @@ export function billText(order: Order): string {
 // Falls back to WhatsApp's contact picker when the customer has no number.
 export function whatsappUrl(text: string, phone?: string | null): string {
   return `https://wa.me/${phone ?? ''}?text=${encodeURIComponent(text)}`;
+}
+
+// A polite payment reminder for the Dues screen. Always English: it goes to customers.
+export function reminderText(due: Due): string {
+  return [
+    `Namaste ${due.customerName} 🙏`,
+    `A gentle reminder from ${KITCHEN.name.replace(/\b\w+/g, (w) => w[0] + w.slice(1).toLowerCase())}:`,
+    `${rupees(due.balancePaise)} is pending for order #${due.orderId} (${shortDate(due.deliveryDate)}).`,
+    'Thank you!',
+  ].join('\n');
+}
+
+// Today's menu as WhatsApp text, grouped by category, available items only.
+export function menuText(items: MenuItem[]): string {
+  const parts = [`*${KITCHEN.name} · MENU*`, KITCHEN.phones.join(' | ')];
+  let category = '';
+  for (const item of items.filter((i) => i.isAvailable)) {
+    if (item.category !== category) {
+      category = item.category;
+      parts.push('', `*${category}*`);
+    }
+    const min = item.minQty ? ` (min ${quantity(item.minQty, item.unit)})` : '';
+    parts.push(`• ${item.name}: ${rupees(item.pricePaise)}/${item.unit}${min}`);
+  }
+  parts.push('', 'Order a day in advance. Thank you! 🙏');
+  return parts.join('\n');
 }

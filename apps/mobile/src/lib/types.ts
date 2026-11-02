@@ -1,8 +1,10 @@
 // Mirrors the API's JSON. Money is always integer paise; dates are 'YYYY-MM-DD' strings.
-export type MenuUnit = 'kg' | 'pc' | 'plate' | 'bowl' | 'roll' | 'pizza';
+export const MENU_UNITS = ['kg', 'pc', 'plate', 'bowl', 'roll', 'pizza'] as const;
+export type MenuUnit = (typeof MENU_UNITS)[number];
+export const PAYMENT_MODES = ['cash', 'upi_papa', 'upi_mummy'] as const;
 export type OrderStatus = 'booked' | 'ready' | 'delivered' | 'cancelled';
 export type Fulfilment = 'pickup' | 'parcel';
-export type PaymentMode = 'cash' | 'upi_papa' | 'upi_mummy';
+export type PaymentMode = (typeof PAYMENT_MODES)[number];
 
 export interface MenuItem {
   id: number;
@@ -21,6 +23,7 @@ export interface Customer {
   name: string;
   phone: string | null;
   address: string | null;
+  duePaise?: number; // only on search results: unpaid balance across their orders
 }
 
 export interface OrderItem {
@@ -63,6 +66,7 @@ export interface Order {
   payments: Payment[];
 }
 
+// balancePaise < 0 on a cancelled order means a refund is owed.
 export interface Due {
   orderId: number;
   deliveryDate: string;
