@@ -94,8 +94,17 @@ function UpcomingList() {
               disabled={past}
               style={[styles.day, isToday && styles.dayToday, past && styles.dayPast]}
             >
-              <Text style={[styles.dayName, isToday && styles.dayTextToday]}>{weekdayShort(date, locale)}</Text>
-              <Text style={[styles.dayNumber, isToday && styles.dayTextToday]}>{parseISO(date).getDate()}</Text>
+              {/* Seven narrow cells: with a large phone font, "मंगल" wrapped mid-word. Shrink to fit instead. */}
+              <Text style={[styles.dayName, isToday && styles.dayTextToday]} numberOfLines={1} adjustsFontSizeToFit>
+                {weekdayShort(date, locale)}
+              </Text>
+              <Text
+                style={[styles.dayNumber, isToday && styles.dayTextToday]}
+                numberOfLines={1}
+                maxFontSizeMultiplier={1.3}
+              >
+                {parseISO(date).getDate()}
+              </Text>
               <View style={[styles.dot, daysWithOrders.has(date) && styles.dotOn]} />
             </Pressable>
           );
@@ -292,12 +301,13 @@ const styles = StyleSheet.create({
   toggleActive: { backgroundColor: colors.surface },
   toggleText: { fontSize: font.label, color: colors.muted, fontWeight: '600' },
   toggleTextActive: { color: colors.text },
-  weekRow: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingBottom: space.sm },
-  weekArrow: { width: 36, minHeight: minTouch, alignItems: 'center', justifyContent: 'center' },
+  weekRow: { flexDirection: 'row', alignItems: 'center', gap: 3, paddingBottom: space.sm },
+  weekArrow: { width: 32, minHeight: minTouch, alignItems: 'center', justifyContent: 'center' },
   day: {
     flex: 1,
     alignItems: 'center',
     paddingVertical: space.sm,
+    paddingHorizontal: 2,
     borderRadius: radius.md,
     backgroundColor: colors.tint,
   },
