@@ -17,9 +17,9 @@ Native changes later would need a reinstall, which can't happen in person again 
 - [ ] Monorepo scaffold: `apps/mobile` (Expo), `apps/api` (NestJS), shared lint/format, local Postgres via Docker
 - [x] API: TypeORM config, first migration, health endpoint, PIN auth
 - [x] DB + API: menu items (CRUD), seeded from the current Canva menu
-- [ ] DB + API: customers (name, phone, address), search by name or phone
-- [ ] DB + API: orders + order items (price snapshot + override, order-level notes, delivery date and time, status), optimistic locking
-- [ ] DB + API: payments (Cash / UPI Papa / UPI Mummy, advance) and balance due
+- [x] DB + API: customers (name, phone, address), search by name or phone
+- [x] DB + API: orders + order items (price snapshot + override, order-level notes, delivery date and time, status), optimistic locking
+- [x] DB + API: payments (Cash / UPI Papa / UPI Mummy, advance) and balance due
 - [ ] Deploy: API on Render, DB on Neon, keep-alive ping, env secrets
 - [ ] App: PIN screen, English/Hindi toggle, tab layout
 - [ ] App: menu screen (add, edit, hide/show, delete), share menu as WhatsApp text

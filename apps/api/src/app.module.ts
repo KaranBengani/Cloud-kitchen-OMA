@@ -4,10 +4,12 @@ import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from './auth/auth.module.js';
+import { CustomersModule } from './customers/customers.module.js';
 import { type Env, validateEnv } from './config/env.js';
 import { typeormOptions } from './database/typeorm.options.js';
 import { HealthController } from './health/health.controller.js';
 import { MenuModule } from './menu/menu.module.js';
+import { OrdersModule } from './orders/orders.module.js';
 
 @Module({
   imports: [
@@ -21,6 +23,8 @@ import { MenuModule } from './menu/menu.module.js';
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 120 }]),
     AuthModule,
     MenuModule,
+    CustomersModule,
+    OrdersModule,
   ],
   controllers: [HealthController],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
