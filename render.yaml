@@ -23,3 +23,28 @@ services:
         sync: false
       - key: JWT_SECRET
         generateValue: true # Render generates a random 256-bit value
+
+  # Staging: same code, its own Neon branch ("staging") and PIN. Used by the
+  # "Mummy's Kitchen (Test)" app so testing never touches real orders.
+  # Not kept awake (no keep-alive ping), so it sleeps when idle and barely uses free hours;
+  # the first request after a sleep takes about a minute.
+  - type: web
+    name: oma-api-stg
+    runtime: node
+    plan: free
+    region: singapore
+    branch: main
+    rootDir: .
+    buildCommand: npm ci -w api --include=dev && npm run build -w api
+    startCommand: npm run migration:run -w api && node apps/api/dist/main.js
+    healthCheckPath: /health/live
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: 24.13.1
+      - key: DATABASE_URL # Neon "staging" branch connection string
+        sync: false
+      - key: AUTH_PIN
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true

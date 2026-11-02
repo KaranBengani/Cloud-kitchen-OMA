@@ -98,3 +98,11 @@ cream background; tall order cards; centre New Order tab. Cut from V1a: header s
 printer/KOT, delivery charges, offline mode, kitchen open toggle, PDF/QR bill. The WhatsApp bill has **no UPI line**
 (D10). Note chips: Less spicy, Less oil, No onion-garlic, Extra chutney, Separate boxes. P&L and expenses designs are kept
 in `docs/design/v1b/` for Phase 3.
+
+## D16. Staging environment (Accepted, 3 Nov 2026)
+Testing on the real app would create fake orders in the parents' data. A separate, free staging copy:
+- **DB:** Neon branch `staging` (same project), created before real data existed.
+- **API:** Render service `oma-api-stg` from the same `render.yaml`, not kept awake.
+- **App:** the `preview` EAS profile sets `APP_VARIANT=staging` → "Mummy's Kitchen (Test)", package
+  `com.karanbengani.oma.stg`, grey icon; installs next to the real app. Its updates go on the `preview` channel.
+- **Flow:** test on staging → publish the same update to `production`.
