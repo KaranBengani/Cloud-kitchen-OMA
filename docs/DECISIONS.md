@@ -106,3 +106,15 @@ Testing on the real app would create fake orders in the parents' data. A separat
 - **App:** the `preview` EAS profile sets `APP_VARIANT=staging` → "Mummy's Kitchen (Test)", package
   `com.karanbengani.oma.stg`, grey icon; installs next to the real app. Its updates go on the `preview` channel.
 - **Flow:** test on staging → publish the same update to `production`.
+
+## D17. Public web menu (Accepted, 4 Nov 2026)
+The Canva PDF was a second copy of the prices that went stale whenever the menu changed in the app. The API now serves
+`GET /menu`: one HTML page that looks like the Canva card (same fonts Berkshire Swash and Lato, same colours, cover and
+banner images cut from the PDF) and lists **available** items straight from `menu_items`. The app's "Share menu" sends
+this link instead of a long WhatsApp text.
+- **Options:** API-rendered page (chosen) · static site that fetches JSON (a second deploy, CORS) · regenerated image/PDF
+  (more moving parts). Rendered on the server so it needs no JavaScript and WhatsApp's link preview reads the meta tags.
+- **Public by design:** only menu fields are shown; orders and customers stay behind the PIN. Cached 60 s.
+- **Trade-offs:** outside 07:00–23:00 the free server may be asleep, so the first visit can take ~1 minute.
+  Momo-style variants show as two lines (they are two items, D8). A custom domain can be added later.
+

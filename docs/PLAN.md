@@ -30,6 +30,7 @@ Native changes later would need a reinstall, which can't happen in person again 
 - [x] App: WhatsApp text bill (opens the customer's chat directly)
 - [x] Staging: Neon `staging` branch, `oma-api-stg` on Render, "Mummy's Kitchen (Test)" app (D16)
 - [x] EAS production APK built (3 Nov)
+- [x] Public web menu at `/menu`, styled like the Canva card, read live from the menu; app shares the link (D17)
 - [ ] Wed 4 Nov, before installing: wipe test customers, orders and payments from production (keep the menu)
 - [ ] Wed 4 Nov: install on all three phones, log in with the family PIN, Mum's phone set to Hindi (see `HOW_TO_USE.md`)
 - [ ] Confirm an over-the-air update reaches an installed phone
