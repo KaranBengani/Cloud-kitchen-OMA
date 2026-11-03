@@ -46,3 +46,9 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   }
   return response.status === 204 ? (undefined as T) : response.json();
 }
+
+// Render's free server sleeps when idle and takes ~1 minute to wake. Poke it as soon as the app
+// opens, so it is waking while the user types the PIN or looks at the screen. Result is ignored.
+export function wakeServer() {
+  if (BASE_URL) fetch(`${BASE_URL}/health/live`).catch(() => {});
+}

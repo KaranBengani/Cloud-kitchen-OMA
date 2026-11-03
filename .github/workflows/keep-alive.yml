@@ -1,10 +1,12 @@
 # Render's free web service sleeps after 15 minutes idle, and the first request then takes
 # ~1 minute. Pinging every 10 minutes during kitchen hours (07:00–23:00 IST) keeps it awake
 # when the family uses it, and stays inside the free 750 instance-hours a month.
+# GitHub's schedule is best-effort (on 3 Nov it ran once in 13 hours), so this is only a backup
+# to the external pinger on cron-job.org; minutes are offset from :00, when GitHub drops the most runs.
 name: keep-alive
 on:
   schedule:
-    - cron: '*/10 1-17 * * *' # UTC; 01:30–17:30 UTC is 07:00–23:00 IST
+    - cron: '3-59/10 1-17 * * *' # UTC; 01:30–17:30 UTC is 07:00–23:00 IST
   workflow_dispatch:
 jobs:
   ping:
