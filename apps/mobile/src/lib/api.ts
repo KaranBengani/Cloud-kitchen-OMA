@@ -2,6 +2,9 @@
 // so screens can react to specific statuses (401 → log out, 409 → "someone else edited this").
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 
+// The public web menu customers open (DECISIONS.md D17). Served by the API, so it follows the environment.
+export const MENU_URL = `${BASE_URL}/menu`;
+
 export class ApiError extends Error {
   constructor(
     readonly status: number,

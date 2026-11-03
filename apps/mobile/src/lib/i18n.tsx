@@ -208,7 +208,7 @@ const en = {
   'dues.emptyHint': 'Every order is paid up.',
 
   'menu.share': 'Share menu on WhatsApp',
-  'menu.shareHint': 'Sends all available items with prices',
+  'menu.shareHint': 'Sends a link to the menu page with today’s prices',
   'menu.search': 'Search dishes',
   'menu.add': 'Add item',
   'menu.min': 'min {qty}',
@@ -446,7 +446,7 @@ const hi = {
   'dues.emptyHint': 'सभी ऑर्डर का भुगतान हो गया है।',
 
   'menu.share': 'मेन्यू व्हाट्सऐप पर भेजें',
-  'menu.shareHint': 'सभी उपलब्ध आइटम दाम के साथ',
+  'menu.shareHint': 'आज के दाम वाले मेन्यू का लिंक भेजता है',
   'menu.search': 'आइटम खोजें',
   'menu.add': 'आइटम जोड़ें',
   'menu.min': 'कम से कम {qty}',

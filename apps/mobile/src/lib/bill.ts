@@ -1,5 +1,5 @@
 import { quantity, rupees, shortDate, time12 } from './format';
-import type { Due, MenuItem, Order } from './types';
+import type { Due, Order } from './types';
 
 // The kitchen's details as printed on the Canva menu.
 const KITCHEN = {
@@ -53,18 +53,7 @@ export function reminderText(due: Due): string {
   ].join('\n');
 }
 
-// Today's menu as WhatsApp text, grouped by category, available items only.
-export function menuText(items: MenuItem[]): string {
-  const parts = [`*${KITCHEN.name} · MENU*`, KITCHEN.phones.join(' | ')];
-  let category = '';
-  for (const item of items.filter((i) => i.isAvailable)) {
-    if (item.category !== category) {
-      category = item.category;
-      parts.push('', `*${category}*`);
-    }
-    const min = item.minQty ? ` (min ${quantity(item.minQty, item.unit)})` : '';
-    parts.push(`• ${item.name}: ${rupees(item.pricePaise)}/${item.unit}${min}`);
-  }
-  parts.push('', 'Order a day in advance. Thank you! 🙏');
-  return parts.join('\n');
+// Message for sharing the web menu. WhatsApp turns the link into a preview with the menu cover.
+export function menuShareText(url: string): string {
+  return [`*${KITCHEN.name} · MENU*`, 'See our full menu with prices here 👇', url].join('\n');
 }

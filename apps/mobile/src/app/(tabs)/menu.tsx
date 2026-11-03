@@ -3,7 +3,8 @@ import { useState } from 'react';
 import { FlatList, Linking, Pressable, RefreshControl, StyleSheet, Switch, Text, View } from 'react-native';
 import { Screen } from '@/components/screen';
 import { Card, Chip, ChipRow, EmptyState, ErrorState, Icon, SearchBox, Skeleton } from '@/components/ui';
-import { menuText, whatsappUrl } from '@/lib/bill';
+import { MENU_URL } from '@/lib/api';
+import { menuShareText, whatsappUrl } from '@/lib/bill';
 import { quantity, rupees } from '@/lib/format';
 import { useI18n } from '@/lib/i18n';
 import { useMenu, useSaveMenuItem } from '@/lib/queries';
@@ -38,7 +39,7 @@ export default function MenuScreen() {
         refreshControl={<RefreshControl refreshing={menu.isRefetching} onRefresh={() => void menu.refetch()} />}
         ListHeaderComponent={
           <View style={styles.header}>
-            <Card onPress={() => Linking.openURL(whatsappUrl(menuText(menu.data)))} style={styles.share}>
+            <Card onPress={() => Linking.openURL(whatsappUrl(menuShareText(MENU_URL)))} style={styles.share}>
               <View style={styles.row}>
                 <View style={styles.shareIcon}>
                   <Icon name="share-social" color={colors.onPrimary} />
