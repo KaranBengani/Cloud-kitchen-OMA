@@ -9,6 +9,8 @@ export type MenuPageItem = Pick<MenuItem, 'name' | 'category' | 'unit' | 'priceP
 // As printed on the Canva menu. The first number gets the "Order on WhatsApp" button.
 const PHONES = ['+91 9830460199', '+91 9123086730'];
 const ORDER_TEXT = "Hi, I'd like to order from Mummy's Kitchen";
+// Images are cached for a day; bump this when one changes so phones fetch the new file.
+const IMAGE_VERSION = 2;
 
 const UNIT_WORDS: Record<string, [string, string]> = {
   pc: ['piece', 'pieces'],
@@ -93,7 +95,7 @@ export function renderMenuPage(items: MenuPageItem[], origin: string): string {
 <meta name="description" content="${description}">
 <meta property="og:title" content="Mummy's Kitchen · Menu">
 <meta property="og:description" content="${description}">
-<meta property="og:image" content="${origin}/menu/cover.jpg">
+<meta property="og:image" content="${origin}/menu/cover.jpg?v=${IMAGE_VERSION}">
 <meta property="og:type" content="website">
 <meta name="theme-color" content="#F4CB61">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -103,8 +105,8 @@ export function renderMenuPage(items: MenuPageItem[], origin: string): string {
 </head>
 <body>
 <div class="page">
-  <img class="cover" alt="Mummy's Kitchen" src="/menu/cover.jpg" width="900" height="1091">
-  <img class="banner" alt="" src="/menu/banner.jpg" width="1200" height="448">
+  <img class="cover" alt="Mummy's Kitchen" src="/menu/cover.jpg?v=${IMAGE_VERSION}" width="900" height="1273">
+  <img class="banner" alt="" src="/menu/banner.jpg?v=${IMAGE_VERSION}" width="1200" height="448">
   <p class="bulk">For bulk orders place order 3 days in advance</p>
   <main class="menu">
 ${sections}

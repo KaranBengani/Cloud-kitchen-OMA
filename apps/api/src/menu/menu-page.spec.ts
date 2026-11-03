@@ -59,7 +59,7 @@ describe('renderMenuPage', () => {
     expect(html).toContain('80/ plate');
     expect(html).toContain('(2 pc/plate)');
     expect(html).toContain('Minimum Quantity 4 plates');
-    expect(html).toContain('content="https://example.com/menu/cover.jpg"');
+    expect(html).toContain('content="https://example.com/menu/cover.jpg?v=2"');
     expect(html).not.toContain('<Vada>');
   });
 });
