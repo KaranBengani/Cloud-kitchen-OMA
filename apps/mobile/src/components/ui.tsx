@@ -62,7 +62,14 @@ export function Button({
       ) : (
         <>
           {icon ? <Icon name={icon} color={v.text} size={22} /> : null}
-          <Text style={[styles.buttonText, { color: v.text }]} numberOfLines={2}>
+          {/* One line that shrinks to fit: with a large phone font, two lines broke words mid-way ("Remi / nd"). */}
+          <Text
+            style={[styles.buttonText, { color: v.text }]}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.6}
+            maxFontSizeMultiplier={1.3}
+          >
             {label}
           </Text>
         </>

@@ -3,6 +3,8 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
+import { AppState } from 'react-native';
+import { wakeServer } from '@/lib/api';
 import { AuthProvider, useAuth } from '@/lib/auth';
 import { I18nProvider } from '@/lib/i18n';
 import { colors } from '@/lib/theme';
@@ -34,6 +36,12 @@ export default function RootLayout() {
 // This is UX only; the API's AuthGuard is what actually protects the data.
 function RootNavigator() {
   const { isLoading, isLoggedIn } = useAuth();
+
+  useEffect(() => {
+    wakeServer();
+    const sub = AppState.addEventListener('change', (state) => state === 'active' && wakeServer());
+    return () => sub.remove();
+  }, []);
 
   useEffect(() => {
     if (!isLoading) SplashScreen.hideAsync();
