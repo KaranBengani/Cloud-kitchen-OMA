@@ -8,6 +8,7 @@ import { CustomersModule } from './customers/customers.module.js';
 import { type Env, validateEnv } from './config/env.js';
 import { typeormOptions } from './database/typeorm.options.js';
 import { HealthController } from './health/health.controller.js';
+import { HolidaysModule } from './holidays/holidays.module.js';
 import { MenuModule } from './menu/menu.module.js';
 import { OrdersModule } from './orders/orders.module.js';
 
@@ -25,6 +26,7 @@ import { OrdersModule } from './orders/orders.module.js';
     MenuModule,
     CustomersModule,
     OrdersModule,
+    HolidaysModule,
   ],
   controllers: [HealthController],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],

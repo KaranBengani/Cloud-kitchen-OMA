@@ -1,4 +1,5 @@
 import Constants from 'expo-constants';
+import { router } from 'expo-router';
 import * as Updates from 'expo-updates';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -64,6 +65,7 @@ export default function SettingsScreen() {
         })}
       </View>
 
+      <Row icon="calendar-outline" label={t('settings.holidays')} onPress={() => router.push('/holidays')} />
       <Row icon="cloud-download-outline" label={t('settings.update')} onPress={checkForUpdate} busy={checking} />
       <Row icon="log-out-outline" label={t('settings.logout')} onPress={confirmLogout} danger />
 

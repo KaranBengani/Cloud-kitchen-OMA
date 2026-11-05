@@ -102,3 +102,11 @@ export interface PaymentInput {
   isAdvance?: boolean;
   note?: string | null;
 }
+
+// A day or range when the kitchen takes no orders (D18). Dates are 'YYYY-MM-DD', end inclusive.
+export interface Holiday {
+  id: number;
+  startDate: string;
+  endDate: string;
+  note: string | null;
+}

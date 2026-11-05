@@ -1,3 +1,5 @@
+import { todayIST } from '../common/today.js';
+import type { KitchenHoliday } from '../holidays/kitchen-holiday.entity.js';
 import type { MenuItem } from './menu-item.entity.js';
 
 // The public web menu (DECISIONS.md D17): the Canva card as one HTML page, built from the live menu.
@@ -5,6 +7,7 @@ import type { MenuItem } from './menu-item.entity.js';
 // Fonts and colours are the ones the Canva PDF uses (Berkshire Swash, Lato); images are cut from it.
 
 export type MenuPageItem = Pick<MenuItem, 'name' | 'category' | 'unit' | 'pricePaise' | 'minQty' | 'description'>;
+export type MenuPageHoliday = Pick<KitchenHoliday, 'startDate' | 'endDate' | 'note'>;
 
 // As printed on the Canva menu. The first number gets the "Order on WhatsApp" button.
 const PHONES = ['+91 9830460199', '+91 9123086730'];
@@ -37,6 +40,34 @@ export function minLabel(min: number, units: string[]): string {
   }
   const words = units.every((u) => u === units[0]) ? UNIT_WORDS[units[0]] : undefined;
   return `${min} ${words ? words[min === 1 ? 0 : 1] : 'units'}`;
+}
+
+// '2026-11-10' → 'Tue, 10 Nov'. Parsed as UTC and formatted in UTC, so the server's timezone can't shift the day.
+export function dayLabel(iso: string): string {
+  const [y, m, d] = iso.split('-').map(Number);
+  return new Intl.DateTimeFormat('en-IN', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' }).format(
+    new Date(Date.UTC(y, m - 1, d)),
+  );
+}
+
+// "Kitchen closed Tue, 10 Nov – Thu, 12 Nov · Diwali". Holidays more than 60 days away aren't shown yet.
+export function holidayLines(holidays: MenuPageHoliday[], today: string): string[] {
+  const horizon = new Date(`${today}T00:00:00Z`);
+  horizon.setUTCDate(horizon.getUTCDate() + 60);
+  const limit = horizon.toISOString().slice(0, 10);
+  return holidays
+    .filter((h) => h.startDate <= limit)
+    .slice(0, 3)
+    .map((h) => {
+      const from = h.startDate < today ? today : h.startDate;
+      const when =
+        from === today && h.endDate === today
+          ? 'today'
+          : from === h.endDate
+            ? dayLabel(from)
+            : `${from === today ? 'today' : dayLabel(from)} – ${dayLabel(h.endDate)}`;
+      return `Kitchen closed ${when}${h.note ? ` · ${h.note}` : ''}`;
+    });
 }
 
 type Run = { min: number | null; items: MenuPageItem[] };
@@ -81,8 +112,16 @@ function renderSection({ category, runs }: Section): string {
 }
 
 // `origin` (e.g. https://oma-api-exso.onrender.com) makes the preview image URL absolute, which WhatsApp needs.
-export function renderMenuPage(items: MenuPageItem[], origin: string): string {
+export function renderMenuPage(
+  items: MenuPageItem[],
+  origin: string,
+  holidays: MenuPageHoliday[] = [],
+  today = todayIST(),
+): string {
   const sections = groupMenu(items).map(renderSection).join('\n');
+  const closed = holidayLines(holidays, today)
+    .map((line) => `<p class="closed">${escapeHtml(line)}</p>`)
+    .join('');
   const orderUrl = `https://wa.me/${PHONES[0].replace(/\D/g, '')}?text=${encodeURIComponent(ORDER_TEXT)}`;
   const description = 'Homemade namkeen, snacks & chaats, thalis and desserts. Order on WhatsApp.';
 
@@ -108,6 +147,7 @@ export function renderMenuPage(items: MenuPageItem[], origin: string): string {
   <img class="cover" alt="Mummy's Kitchen" src="/menu/cover.jpg?v=${IMAGE_VERSION}" width="900" height="1273">
   <img class="banner" alt="" src="/menu/banner.jpg?v=${IMAGE_VERSION}" width="1200" height="448">
   <p class="bulk">For bulk orders place order 3 days in advance</p>
+  ${closed}
   <main class="menu">
 ${sections}
   </main>
@@ -141,6 +181,10 @@ const STYLES = `
   .page { max-width: 920px; margin: 0 auto; }
   .cover, .banner { display: block; width: 100%; height: auto; }
   .bulk { text-align: center; font-size: clamp(1.05rem, 4.4vw, 1.5rem); margin: 0.2em 16px 0; text-wrap: balance; }
+  .closed {
+    margin: 12px 16px 0; padding: 10px 16px; border-radius: 8px; text-align: center;
+    background: var(--min); color: #fff; font-family: var(--sans); font-weight: 900; font-size: 1.05rem;
+  }
   .menu { padding: 8px 16px 32px; display: grid; gap: 28px; }
   @media (min-width: 760px) {
     .menu { grid-template-columns: 1fr 1fr; column-gap: 48px; padding-inline: 40px; align-items: start; }

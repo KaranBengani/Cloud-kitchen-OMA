@@ -239,6 +239,15 @@ const en = {
   'settings.logout': 'Log out',
   'settings.logoutConfirm': 'Log out of this phone?',
   'settings.version': 'Version',
+  'settings.holidays': 'Kitchen holidays',
+  'holidays.hint': 'Customers see these on the menu link. Orders can still be booked here.',
+  'holidays.none': 'No holidays planned',
+  'holidays.add': 'Add holiday',
+  'holidays.from': 'From',
+  'holidays.to': 'To',
+  'holidays.note': 'Reason (optional), e.g. Diwali',
+  'holidays.deleteConfirm': 'Remove this holiday?',
+  'review.holiday': 'Kitchen holiday on this date',
 } as const;
 
 type Key = keyof typeof en;
@@ -477,6 +486,15 @@ const hi = {
   'settings.logout': 'लॉग आउट',
   'settings.logoutConfirm': 'इस फ़ोन से लॉग आउट करें?',
   'settings.version': 'वर्ज़न',
+  'settings.holidays': 'किचन की छुट्टियाँ',
+  'holidays.hint': 'ये ग्राहकों को मेन्यू लिंक पर दिखती हैं। यहाँ से ऑर्डर फिर भी बुक हो सकते हैं।',
+  'holidays.none': 'कोई छुट्टी तय नहीं',
+  'holidays.add': 'छुट्टी जोड़ें',
+  'holidays.from': 'से',
+  'holidays.to': 'तक',
+  'holidays.note': 'कारण (ज़रूरी नहीं), जैसे दिवाली',
+  'holidays.deleteConfirm': 'यह छुट्टी हटाएं?',
+  'review.holiday': 'इस दिन किचन की छुट्टी है',
 } satisfies Record<Key, string>;
 
 export type Language = 'en' | 'hi';

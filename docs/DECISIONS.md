@@ -69,6 +69,11 @@ From the current Canva menu:
 ## D9. Payments and dues (Proposed)
 - Separate `payments` rows per order: amount, mode (**Cash / UPI Papa / UPI Mummy**), date, advance or not.
 - Balance due = order total − sum of payments, computed and never stored, so it can't drift.
+- **Revised 6 Nov (Karan):** `orders.paid_paise` now **stores** the sum of payments, updated in the same transaction
+  as every payment insert or delete (`paid_paise = paid_paise + amount` in SQL, so concurrent payments can't overwrite
+  each other). Dues reads only a partial index of orders that still owe money or a refund
+  (`IDX_orders_open_balance`), and customer search no longer adds up the payments table. Chosen while data is small,
+  so the backfill is trivial. Drift risk is contained by writing payments only through `OrdersService`.
 - A "Who owes money" screen lists orders with balance > 0.
 
 ## D10. Bill format (Accepted, 2 Nov 2026)
@@ -117,4 +122,26 @@ this link instead of a long WhatsApp text.
 - **Public by design:** only menu fields are shown; orders and customers stay behind the PIN. Cached 60 s.
 - **Trade-offs:** outside 07:00–23:00 the free server may be asleep, so the first visit can take ~1 minute.
   Momo-style variants show as two lines (they are two items, D8). A custom domain can be added later.
+
+## D18. Kitchen holidays (Accepted, 6 Nov 2026)
+`kitchen_holidays` holds date ranges (start, end inclusive, optional note such as "Diwali"). Parents manage them in
+Settings → Kitchen holidays. The public menu shows "Kitchen closed …" for holidays in the next 60 days; the web order
+form (D19) won't offer those dates. In the app's New Order a holiday only **warns**: parents may still book by choice.
+Upcoming holidays and the public menu are cached in server memory and cleared on every write, so customers browsing
+the link don't wake the Neon database (compute is billed for time awake, not query size).
+
+## D19. Online ordering from the menu link (Accepted, 6 Nov 2026; Claude builds)
+- **No customer login.** The mobile number identifies the customer (normalised to `91XXXXXXXXXX`, unique index).
+  Same number → same customer row; names are not matched (two people can share a name). An existing customer's saved
+  name is kept; a different typed name is shown on the request.
+- **Privacy:** without login the page never reveals saved addresses or details for a typed number.
+- **Addresses:** `customer_addresses` (label Home / Office / Friend or family / Other, optional recipient name and
+  phone, address text), deduplicated per customer. The app's customer list and New Order read the same rows.
+- **Web orders arrive as "requested"** and parents **accept** (→ booked) or **decline**. The customer's confirmation
+  screen offers "Send order on WhatsApp", which is how parents are notified (no push notifications: a new native module
+  would need reinstalls).
+- **Minimum quantities are not enforced** on the web: below-minimum orders are reviewed by parents like any request.
+- **Delivery time** is any time the customer picks (optional), not fixed slots. Same-day orders ask the customer to call first;
+  off-menu items: place the order, then call. Delivery is by Rapido/Uber parcel, paid by the customer (D12).
+- **Abuse limits:** strict rate limit on the public order endpoint, a honeypot field, caps on items and text length.
 

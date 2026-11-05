@@ -6,12 +6,12 @@ import { Customer } from '../customers/customer.entity.js';
 import { MenuItem } from '../menu/menu-item.entity.js';
 import type { CreateOrderDto, OrderInput, PaymentInput, UpdateOrderDto, UpdateStatusDto } from './order.dto.js';
 import { OrderItem } from './order-item.entity.js';
-import { Order } from './order.entity.js';
+import { OPEN_BALANCE, Order } from './order.entity.js';
 import { Payment } from './payment.entity.js';
 import { priceOrder } from './pricing.js';
 
 // What the app receives: the order plus money figures it would otherwise have to compute itself.
-export type OrderView = Order & { subtotalPaise: number; paidPaise: number; balancePaise: number };
+export type OrderView = Order & { subtotalPaise: number; balancePaise: number };
 
 export interface DueRow {
   orderId: number;
@@ -98,19 +98,31 @@ export class OrdersService {
 
   // Payments don't bump the order version: two people recording two real payments at once
   // is not a conflict, both should be kept.
-  async addPayment(orderId: number, dto: PaymentInput): Promise<OrderView> {
-    await this.get(orderId);
-    await this.insertPayment(this.db.manager, orderId, dto);
-    return this.get(orderId);
+  addPayment(orderId: number, dto: PaymentInput): Promise<OrderView> {
+    return this.db.transaction(async (tx) => {
+      if (!(await tx.getRepository(Order).existsBy({ id: orderId }))) {
+        throw new NotFoundException(`Order ${orderId} not found`);
+      }
+      await this.insertPayment(tx, orderId, dto);
+      return this.get(orderId, tx);
+    });
   }
 
-  async deletePayment(orderId: number, paymentId: number): Promise<OrderView> {
-    const result = await this.db.getRepository(Payment).delete({ id: paymentId, orderId });
-    if (!result.affected) throw new NotFoundException(`Payment ${paymentId} not found on order ${orderId}`);
-    return this.get(orderId);
+  deletePayment(orderId: number, paymentId: number): Promise<OrderView> {
+    return this.db.transaction(async (tx) => {
+      // RETURNING gives back the deleted amount, so paid_paise can be reduced by exactly that.
+      const [rows]: [{ amount_paise: number }[], number] = await tx.query(
+        `DELETE FROM payments WHERE id = $1 AND order_id = $2 RETURNING amount_paise`,
+        [paymentId, orderId],
+      );
+      if (!rows.length) throw new NotFoundException(`Payment ${paymentId} not found on order ${orderId}`);
+      await this.adjustPaid(tx, orderId, -rows[0].amount_paise);
+      return this.get(orderId, tx);
+    });
   }
 
-  // Who owes money, and who we owe: aggregated in SQL rather than loading every order into memory.
+  // Who owes money, and who we owe. Reads only orders in the IDX_orders_open_balance partial index,
+  // so it stays fast however many settled orders accumulate:
   // - Active orders with a balance > 0: the customer owes us.
   // - Cancelled orders with money still paid on them: a refund is due (balancePaise is negative).
   //   Recording the refund as a negative payment brings paid to 0 and drops the row.
@@ -118,15 +130,12 @@ export class OrdersService {
     const rows: Record<string, unknown>[] = await this.db.query(`
       -- ::text keeps the date as '2026-11-14'. Without it the pg driver turns DATE into a JS Date at
       -- local midnight, which serialises as the previous day in UTC.
-      SELECT o.id AS order_id, o.delivery_date::text AS delivery_date, o.status, o.total_paise,
-             c.id AS customer_id, c.name AS customer_name, c.phone AS customer_phone,
-             COALESCE(SUM(p.amount_paise), 0)::int AS paid_paise
+      SELECT o.id AS order_id, o.delivery_date::text AS delivery_date, o.status, o.total_paise, o.paid_paise,
+             c.id AS customer_id, c.name AS customer_name, c.phone AS customer_phone
       FROM orders o
       JOIN customers c ON c.id = o.customer_id
-      LEFT JOIN payments p ON p.order_id = o.id
-      GROUP BY o.id, c.id
-      HAVING (o.status <> 'cancelled' AND o.total_paise - COALESCE(SUM(p.amount_paise), 0) > 0)
-          OR (o.status = 'cancelled' AND COALESCE(SUM(p.amount_paise), 0) > 0)
+      -- Same condition as the index (OPEN_BALANCE in order.entity.ts), so Postgres can use it.
+      WHERE ${OPEN_BALANCE.replaceAll('"', '')}
       ORDER BY o.delivery_date ASC, o.id ASC
     `);
     return rows.map((r) => ({
@@ -231,8 +240,9 @@ export class OrdersService {
     }
   }
 
-  private insertPayment(tx: EntityManager, orderId: number, dto: PaymentInput) {
-    return tx.getRepository(Payment).insert({
+  // Always called inside a transaction, so the payment row and the order's paid_paise change together.
+  private async insertPayment(tx: EntityManager, orderId: number, dto: PaymentInput) {
+    await tx.getRepository(Payment).insert({
       orderId,
       amountPaise: dto.amountPaise,
       mode: dto.mode,
@@ -240,6 +250,13 @@ export class OrdersService {
       isAdvance: dto.isAdvance ?? false,
       note: dto.note ?? null,
     });
+    await this.adjustPaid(tx, orderId, dto.amountPaise);
+  }
+
+  // "paid_paise + $1" in SQL, not read-add-write in JS: two payments saved at the same moment
+  // can't overwrite each other's total.
+  private adjustPaid(tx: EntityManager, orderId: number, deltaPaise: number) {
+    return tx.query(`UPDATE orders SET paid_paise = paid_paise + $1 WHERE id = $2`, [deltaPaise, orderId]);
   }
 }
 
@@ -247,8 +264,7 @@ function toView(order: Order): OrderView {
   order.items.sort((a, b) => a.sortOrder - b.sortOrder);
   order.payments.sort((a, b) => a.paidOn.localeCompare(b.paidOn) || a.id - b.id);
   const subtotalPaise = order.totalPaise + order.discountPaise;
-  const paidPaise = order.payments.reduce((sum, p) => sum + p.amountPaise, 0);
   // Cancelled orders owe nothing, whatever was paid.
-  const balancePaise = order.status === 'cancelled' ? 0 : order.totalPaise - paidPaise;
-  return Object.assign(order, { subtotalPaise, paidPaise, balancePaise });
+  const balancePaise = order.status === 'cancelled' ? 0 : order.totalPaise - order.paidPaise;
+  return Object.assign(order, { subtotalPaise, balancePaise });
 }

@@ -19,25 +19,25 @@ export class CustomersService {
   // Search by name fragment or phone digits. Customers who ordered most recently come first, so
   // regulars surface without typing. Each row includes the customer's unpaid balance across
   // non-cancelled orders, so a new order can be taken knowing they already owe money.
+  // LATERAL runs the per-customer summary through IDX_orders_customer_id for each matching customer,
+  // instead of adding up every order in the database on every keystroke. Balances come from the
+  // stored orders.paid_paise, so the payments table isn't read at all.
   // ILIKE without an index is fine at this size (hundreds of rows); a trigram index is the upgrade path.
   async search(q?: string): Promise<CustomerSummary[]> {
     const term = q?.trim() ?? '';
     const digits = term.replace(/\D/g, '');
     const rows: Record<string, unknown>[] = await this.db.query(
       `
-      SELECT c.id, c.name, c.phone, c.address, COALESCE(s.due_paise, 0)::int AS due_paise
+      SELECT c.id, c.name, c.phone, c.address, s.due_paise
       FROM customers c
-      LEFT JOIN (
-        SELECT o.customer_id,
-               MAX(o.created_at) AS last_order_at,
+      CROSS JOIN LATERAL (
+        SELECT MAX(o.created_at) AS last_order_at,
                -- GREATEST: an overpaid order is not a credit against another order's debt.
-               SUM(CASE WHEN o.status <> 'cancelled'
-                        THEN GREATEST(o.total_paise - COALESCE(p.paid, 0), 0) ELSE 0 END) AS due_paise
+               COALESCE(SUM(GREATEST(o.total_paise - o.paid_paise, 0))
+                        FILTER (WHERE o.status <> 'cancelled'), 0)::int AS due_paise
         FROM orders o
-        LEFT JOIN (SELECT order_id, SUM(amount_paise) AS paid FROM payments GROUP BY order_id) p
-               ON p.order_id = o.id
-        GROUP BY o.customer_id
-      ) s ON s.customer_id = c.id
+        WHERE o.customer_id = c.id
+      ) s
       WHERE $1 = '' OR c.name ILIKE '%' || $1 || '%' OR (length($2) >= 3 AND c.phone LIKE '%' || $2 || '%')
       ORDER BY s.last_order_at DESC NULLS LAST, c.updated_at DESC
       LIMIT 30
