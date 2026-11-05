@@ -143,5 +143,11 @@ the link don't wake the Neon database (compute is billed for time awake, not que
 - **Minimum quantities are not enforced** on the web: below-minimum orders are reviewed by parents like any request.
 - **Delivery time** is any time the customer picks (optional), not fixed slots. Same-day orders ask the customer to call first;
   off-menu items: place the order, then call. Delivery is by Rapido/Uber parcel, paid by the customer (D12).
-- **Abuse limits:** strict rate limit on the public order endpoint, a honeypot field, caps on items and text length.
+- **Abuse limits:** 10 tries an hour per network on `POST /order`, 30 web orders an hour overall, a honeypot field,
+  caps on items (40) and text lengths. Rate limits count the visitor's real address from Cloudflare's
+  `CF-Connecting-IP` (Render's proxy would otherwise make everyone share one limit; this also stops a stranger's wrong
+  PINs from locking the family out of login).
+- **Statuses:** `requested → booked` (Accept) or `requested → declined` (final). Requests and declined orders are
+  left out of the day list, calendar, Dues and customer balances. Orders tab shows requests on top with a badge; the
+  app refreshes when brought to the foreground (no polling, so the database can sleep).
 

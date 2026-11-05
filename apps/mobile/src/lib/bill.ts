@@ -55,5 +55,5 @@ export function reminderText(due: Due): string {
 
 // Message for sharing the web menu. WhatsApp turns the link into a preview with the menu cover.
 export function menuShareText(url: string): string {
-  return [`*${KITCHEN.name} · MENU*`, 'See our full menu with prices here 👇', url].join('\n');
+  return [`*${KITCHEN.name} · MENU*`, 'See our menu and order online here 👇', url].join('\n');
 }

@@ -17,7 +17,7 @@ import {
   weekdayShort,
 } from '@/lib/format';
 import { useI18n } from '@/lib/i18n';
-import { useOrders } from '@/lib/queries';
+import { useOrders, useRequests } from '@/lib/queries';
 import { colors, font, minTouch, radius, serif, space } from '@/lib/theme';
 import type { Order } from '@/lib/types';
 
@@ -121,6 +121,7 @@ function UpcomingList() {
       <SectionList
         ref={list}
         sections={sections}
+        ListHeaderComponent={<Requests />}
         keyExtractor={(order) => String(order.id)}
         renderItem={({ item }) => <OrderCard order={item} />}
         renderSectionHeader={({ section }) => <DayHeader section={section} />}
@@ -148,6 +149,24 @@ function UpcomingList() {
     </>
   );
 
+}
+
+// Web orders waiting for a decision (D19), shown above the day list until they're accepted or declined.
+function Requests() {
+  const { t } = useI18n();
+  const requests = useRequests();
+  if (!requests.data?.length) return null;
+  return (
+    <View style={styles.requests}>
+      <Text style={styles.requestsTitle}>
+        {t('orders.requests')} ({requests.data.length})
+      </Text>
+      <Text style={styles.requestsHint}>{t('orders.requestsHint')}</Text>
+      {requests.data.map((order) => (
+        <OrderCard key={order.id} order={order} />
+      ))}
+    </View>
+  );
 }
 
 // Month grid with order counts per day; tapping a day lists its orders underneath.
@@ -319,6 +338,15 @@ const styles = StyleSheet.create({
   dot: { width: 6, height: 6, borderRadius: 3, marginTop: 3 },
   dotOn: { backgroundColor: colors.primary },
   listContent: { paddingBottom: space.xl * 2 },
+  requests: {
+    gap: space.md,
+    padding: space.md,
+    marginBottom: space.md,
+    borderRadius: radius.lg,
+    backgroundColor: colors.dangerSoft,
+  },
+  requestsTitle: { fontFamily: serif, fontSize: font.title, fontWeight: '700', color: colors.danger },
+  requestsHint: { fontSize: font.label, color: colors.text, marginTop: -space.sm },
   dayHeader: {
     flexDirection: 'row',
     alignItems: 'center',

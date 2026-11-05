@@ -1,9 +1,10 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
-import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from './auth/auth.module.js';
+import { ClientIpThrottlerGuard } from './common/client-ip-throttler.guard.js';
 import { CustomersModule } from './customers/customers.module.js';
 import { type Env, validateEnv } from './config/env.js';
 import { typeormOptions } from './database/typeorm.options.js';
@@ -29,6 +30,6 @@ import { OrdersModule } from './orders/orders.module.js';
     HolidaysModule,
   ],
   controllers: [HealthController],
-  providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
+  providers: [{ provide: APP_GUARD, useClass: ClientIpThrottlerGuard }],
 })
 export class AppModule {}

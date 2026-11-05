@@ -60,6 +60,10 @@ export const useOrders = (from?: string, to?: string) =>
     },
   });
 
+// Web orders waiting for Accept / Decline (D19). Under ['orders'], so every order write refreshes it.
+export const useRequests = () =>
+  useQuery({ queryKey: ['orders', 'requests'], queryFn: () => api<Order[]>('/orders/requests') });
+
 export const useOrder = (id: number) =>
   useQuery({ queryKey: keys.order(id), queryFn: () => api<Order>(`/orders/${id}`) });
 

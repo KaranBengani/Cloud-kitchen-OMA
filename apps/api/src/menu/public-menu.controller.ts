@@ -7,10 +7,13 @@ import { MenuService } from './menu.service.js';
 import { renderMenuPage } from './menu-page.js';
 
 // apps/api/assets/menu/, two levels up from both src/menu/ and dist/menu/. Read once at startup.
-const ASSETS = new URL('../../assets/menu/', import.meta.url);
-const IMAGES: Record<string, Buffer> = {
-  'cover.jpg': readFileSync(new URL('cover.jpg', ASSETS)),
-  'banner.jpg': readFileSync(new URL('banner.jpg', ASSETS)),
+// Only these files can be fetched: the name in the URL is looked up here, never used as a path.
+const ASSETS_DIR = new URL('../../assets/menu/', import.meta.url);
+const asset = (file: string, type: string) => ({ body: readFileSync(new URL(file, ASSETS_DIR)), type });
+const ASSETS: Record<string, { body: Buffer; type: string }> = {
+  'cover.jpg': asset('cover.jpg', 'image/jpeg'),
+  'banner.jpg': asset('banner.jpg', 'image/jpeg'),
+  'order.js': asset('order.js', 'text/javascript; charset=utf-8'),
 };
 
 // The customer-facing menu page (DECISIONS.md D17). Public: anyone with the link can read the menu,
@@ -37,9 +40,9 @@ export class PublicMenuController {
 
   @Get(':file')
   @Header('Cache-Control', 'public, max-age=86400')
-  image(@Param('file') file: string): StreamableFile {
-    const image = Object.hasOwn(IMAGES, file) ? IMAGES[file] : undefined;
-    if (!image) throw new NotFoundException();
-    return new StreamableFile(image, { type: 'image/jpeg' });
+  file(@Param('file') file: string): StreamableFile {
+    const found = Object.hasOwn(ASSETS, file) ? ASSETS[file] : undefined;
+    if (!found) throw new NotFoundException();
+    return new StreamableFile(found.body, { type: found.type });
   }
 }

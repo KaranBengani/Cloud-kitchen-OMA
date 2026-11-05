@@ -50,9 +50,20 @@ function OrderDetail({ order, onReload }: { order: Order; onReload: () => void }
     }
   };
 
+  const decline = () =>
+    Alert.alert(t('order.declineConfirm', { id: order.id }), undefined, [
+      { text: t('common.no'), style: 'cancel' },
+      { text: t('order.decline'), style: 'destructive', onPress: () => changeStatus('declined') },
+    ]);
+
+  // Requests are declined, not cancelled; a declined request is final (D19).
   const more = () =>
     Alert.alert(t('order.title', { id: order.id }), undefined, [
-      order.status === 'cancelled'
+      order.status === 'requested'
+        ? { text: t('order.decline'), style: 'destructive', onPress: decline }
+        : order.status === 'declined'
+          ? { text: t('common.cancel'), style: 'cancel' }
+          : order.status === 'cancelled'
         ? { text: t('order.reopen'), onPress: () => changeStatus('booked') }
         : {
             text: t('order.cancel'),
@@ -117,6 +128,32 @@ function OrderDetail({ order, onReload }: { order: Order; onReload: () => void }
             </View>
           ) : null}
         </Card>
+
+        {order.status === 'requested' ? (
+          <View style={styles.request}>
+            <Text style={styles.requestTitle}>{t('order.webRequest')}</Text>
+            <Text style={styles.body}>{t('order.webRequestHint')}</Text>
+            {order.requestedName ? (
+              <Text style={styles.strong}>{t('order.typedName', { name: order.requestedName })}</Text>
+            ) : null}
+            <View style={styles.row}>
+              <Button
+                label={t('order.decline')}
+                variant="danger"
+                onPress={decline}
+                disabled={setStatus.isPending}
+                style={styles.flex}
+              />
+              <Button
+                label={t('order.accept')}
+                icon="checkmark-circle-outline"
+                onPress={() => changeStatus('booked')}
+                loading={setStatus.isPending}
+                style={styles.flex}
+              />
+            </View>
+          </View>
+        ) : null}
 
         {next ? (
           <Button
@@ -271,6 +308,8 @@ function OrderDetail({ order, onReload }: { order: Order; onReload: () => void }
 }
 
 const styles = StyleSheet.create({
+  request: { gap: space.sm, padding: space.md, borderRadius: radius.lg, backgroundColor: colors.dangerSoft },
+  requestTitle: { fontFamily: serif, fontSize: font.title, fontWeight: '700', color: colors.danger },
   flex: { flex: 1 },
   content: { gap: space.md, paddingBottom: space.xl },
   row: { flexDirection: 'row', alignItems: 'center', gap: space.sm },

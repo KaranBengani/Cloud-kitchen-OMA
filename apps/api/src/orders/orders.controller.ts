@@ -11,6 +11,12 @@ export class OrdersController {
     return this.orders.list(from, to);
   }
 
+  // Declared before orders/:id, so "requests" isn't read as an order id.
+  @Get('orders/requests')
+  requests() {
+    return this.orders.requests();
+  }
+
   @Get('orders/:id')
   get(@Param('id', ParseIntPipe) id: number) {
     return this.orders.get(id);

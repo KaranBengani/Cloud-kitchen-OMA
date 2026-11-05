@@ -37,6 +37,8 @@ const en = {
   'status.ready': 'Ready',
   'status.delivered': 'Delivered',
   'status.cancelled': 'Cancelled',
+  'status.requested': 'New request',
+  'status.declined': 'Declined',
   'mode.cash': 'Cash',
   'mode.upi_papa': 'UPI Papa',
   'mode.upi_mummy': 'UPI Mummy',
@@ -59,6 +61,8 @@ const en = {
   'orders.unpaid': 'Unpaid',
   'orders.pickupCounter': 'Pickup at counter',
   'orders.refundDue': 'Refund {amount} due',
+  'orders.requests': 'New requests from the menu link',
+  'orders.requestsHint': 'Check each one, then accept or decline.',
 
   'newOrder.title': 'New Order',
   'form.discardOrder': 'Discard this order?',
@@ -158,6 +162,12 @@ const en = {
   'order.sendBill': 'Send bill',
   'order.edit': 'Edit',
   'order.cancel': 'Cancel order',
+  'order.webRequest': 'Online order request',
+  'order.webRequestHint': 'Placed by the customer on the menu link. Check items, date and prices, edit if needed, then accept.',
+  'order.typedName': 'Name typed on the order: {name}',
+  'order.accept': 'Accept order',
+  'order.decline': 'Decline',
+  'order.declineConfirm': 'Decline order request #{id}? The customer is not told automatically: call or WhatsApp them.',
   'order.cancelConfirm': 'Cancel order #{id}? Payments already recorded are kept.',
   'order.reopen': 'Mark as booked again',
   'order.conflict': 'Someone else changed this order.',
@@ -208,7 +218,7 @@ const en = {
   'dues.emptyHint': 'Every order is paid up.',
 
   'menu.share': 'Share menu on WhatsApp',
-  'menu.shareHint': 'Sends a link to the menu page with today’s prices',
+  'menu.shareHint': 'Sends the menu link: customers see today’s prices and can order online',
   'menu.search': 'Search dishes',
   'menu.add': 'Add item',
   'menu.min': 'min {qty}',
@@ -248,6 +258,11 @@ const en = {
   'holidays.note': 'Reason (optional), e.g. Diwali',
   'holidays.deleteConfirm': 'Remove this holiday?',
   'review.holiday': 'Kitchen holiday on this date',
+  'review.savedAddresses': 'Saved addresses',
+  'address.home': 'Home',
+  'address.office': 'Office',
+  'address.family': 'Friend / family',
+  'address.other': 'Other',
 } as const;
 
 type Key = keyof typeof en;
@@ -284,6 +299,8 @@ const hi = {
   'status.ready': 'तैयार',
   'status.delivered': 'डिलीवर',
   'status.cancelled': 'रद्द',
+  'status.requested': 'नया ऑर्डर अनुरोध',
+  'status.declined': 'मना किया',
   'mode.cash': 'नकद',
   'mode.upi_papa': 'UPI पापा',
   'mode.upi_mummy': 'UPI मम्मी',
@@ -306,6 +323,8 @@ const hi = {
   'orders.unpaid': 'भुगतान बाकी',
   'orders.pickupCounter': 'काउंटर से पिकअप',
   'orders.refundDue': '{amount} वापस करने हैं',
+  'orders.requests': 'मेन्यू लिंक से नए ऑर्डर',
+  'orders.requestsHint': 'हर ऑर्डर देखें, फिर स्वीकार करें या मना करें।',
 
   'newOrder.title': 'नया ऑर्डर',
   'form.discardOrder': 'यह ऑर्डर छोड़ दें?',
@@ -405,6 +424,12 @@ const hi = {
   'order.sendBill': 'बिल भेजें',
   'order.edit': 'बदलें',
   'order.cancel': 'ऑर्डर रद्द करें',
+  'order.webRequest': 'ऑनलाइन ऑर्डर अनुरोध',
+  'order.webRequestHint': 'ग्राहक ने मेन्यू लिंक से भेजा है। आइटम, तारीख और दाम देखें, ज़रूरत हो तो बदलें, फिर स्वीकार करें।',
+  'order.typedName': 'ऑर्डर पर लिखा नाम: {name}',
+  'order.accept': 'ऑर्डर स्वीकार करें',
+  'order.decline': 'मना करें',
+  'order.declineConfirm': 'ऑर्डर अनुरोध #{id} मना करें? ग्राहक को अपने-आप पता नहीं चलेगा: उन्हें फ़ोन या व्हाट्सऐप करें।',
   'order.cancelConfirm': 'ऑर्डर #{id} रद्द करें? मिले हुए भुगतान दर्ज रहेंगे।',
   'order.reopen': 'फिर से बुक करें',
   'order.conflict': 'किसी और ने यह ऑर्डर बदला है।',
@@ -455,7 +480,7 @@ const hi = {
   'dues.emptyHint': 'सभी ऑर्डर का भुगतान हो गया है।',
 
   'menu.share': 'मेन्यू व्हाट्सऐप पर भेजें',
-  'menu.shareHint': 'आज के दाम वाले मेन्यू का लिंक भेजता है',
+  'menu.shareHint': 'मेन्यू लिंक भेजता है: ग्राहक आज के दाम देखकर ऑनलाइन ऑर्डर कर सकते हैं',
   'menu.search': 'आइटम खोजें',
   'menu.add': 'आइटम जोड़ें',
   'menu.min': 'कम से कम {qty}',
@@ -495,6 +520,11 @@ const hi = {
   'holidays.note': 'कारण (ज़रूरी नहीं), जैसे दिवाली',
   'holidays.deleteConfirm': 'यह छुट्टी हटाएं?',
   'review.holiday': 'इस दिन किचन की छुट्टी है',
+  'review.savedAddresses': 'सेव किए पते',
+  'address.home': 'घर',
+  'address.office': 'ऑफ़िस',
+  'address.family': 'दोस्त / परिवार',
+  'address.other': 'दूसरा',
 } satisfies Record<Key, string>;
 
 export type Language = 'en' | 'hi';

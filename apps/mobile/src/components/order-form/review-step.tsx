@@ -207,6 +207,24 @@ export function ReviewStep({
             </Pressable>
           ))}
         </View>
+        {/* The customer's address book (D19): one tap fills the address. A new address typed below is
+            saved to the book when the order is saved. */}
+        {draft.fulfilment === 'parcel' && customer.addresses?.length ? (
+          <>
+            <Text style={[styles.muted, styles.timeLabel]}>{t('review.savedAddresses')}</Text>
+            <View style={styles.chips}>
+              {customer.addresses.map((a) => (
+                <Chip
+                  key={a.id}
+                  label={`${t(`address.${a.label}`)}: ${a.address.length > 28 ? `${a.address.slice(0, 28)}…` : a.address}`}
+                  icon="location-outline"
+                  selected={draft.address.trim() === a.address}
+                  onPress={() => update({ address: a.address })}
+                />
+              ))}
+            </View>
+          </>
+        ) : null}
         {draft.fulfilment === 'parcel' ? (
           <TextInput
             value={draft.address}

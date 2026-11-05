@@ -1,6 +1,7 @@
 import { groupMenu, holidayLines, menuPrice, minLabel, renderMenuPage, type MenuPageItem } from './menu-page.js';
 
 const item = (over: Partial<MenuPageItem>): MenuPageItem => ({
+  id: 1,
   name: 'Item',
   category: 'Namkeen',
   unit: 'kg',
@@ -59,8 +60,18 @@ describe('renderMenuPage', () => {
     expect(html).toContain('80/ plate');
     expect(html).toContain('(2 pc/plate)');
     expect(html).toContain('Minimum Quantity 4 plates');
-    expect(html).toContain('content="https://example.com/menu/cover.jpg?v=2"');
+    expect(html).toContain('content="https://example.com/menu/cover.jpg?v=3"');
     expect(html).not.toContain('<Vada>');
+    expect(html).toContain('<div class="item" data-id="1">');
+  });
+
+  it('embeds the data order.js needs, safe inside a script tag', () => {
+    const html = renderMenuPage([item({ id: 7, name: '</script><b>' })], 'https://example.com', [], '2026-11-06');
+    const json = html.match(/<script type="application\/json" id="menu-data">(.*?)<\/script>/s)![1];
+    expect(json).not.toContain('</script>');
+    const data = JSON.parse(json);
+    expect(data.items[0]).toMatchObject({ id: 7, name: '</script><b>' });
+    expect(data).toMatchObject({ today: '2026-11-06', maxDate: '2027-01-05', whatsapp: '919830460199' });
   });
 });
 
