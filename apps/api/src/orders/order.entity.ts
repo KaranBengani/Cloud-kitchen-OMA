@@ -22,10 +22,16 @@ export type OrderStatus = (typeof ORDER_STATUSES)[number];
 export const FULFILMENTS = ['pickup', 'parcel'] as const;
 export type Fulfilment = (typeof FULFILMENTS)[number];
 
+export const OPEN_BALANCE = `("status" <> 'cancelled' AND "total_paise" > "paid_paise") OR ("status" = 'cancelled' AND "paid_paise" > 0)`;
+
 @Check('CHK_orders_status', `"status" IN ('booked', 'ready', 'delivered', 'cancelled')`)
 @Check('CHK_orders_fulfilment', `"fulfilment" IN ('pickup', 'parcel')`)
 @Check('CHK_orders_total', `"total_paise" >= 0`)
 @Check('CHK_orders_discount', `"discount_paise" >= 0`)
+// Only orders that still owe money, or cancelled orders with a refund due, are in this index, so the
+// Dues screen reads a handful of rows however many settled orders pile up over the years.
+// The query in OrdersService.dues() must repeat this condition exactly for Postgres to use it.
+@Index('IDX_orders_open_balance', ['deliveryDate', 'id'], { where: OPEN_BALANCE })
 @Entity({ name: 'orders' })
 export class Order {
   @PrimaryGeneratedColumn({ type: 'integer' })
@@ -73,6 +79,12 @@ export class Order {
   // screen need it constantly.
   @Column({ name: 'total_paise', type: 'integer' })
   totalPaise: number;
+
+  // Sum of this order's payments (refunds are negative). Kept in step by OrdersService in the same
+  // transaction as every payment insert or delete (DECISIONS.md D9, revised 6 Nov), so Dues and
+  // customer search never have to add up the payments table.
+  @Column({ name: 'paid_paise', type: 'integer', default: 0 })
+  paidPaise: number;
 
   // Optimistic locking (DECISIONS.md D6). Bumped by OrdersService on every write;
   // a write carrying an old version is rejected with 409.

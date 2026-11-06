@@ -57,6 +57,7 @@ function RootNavigator() {
         <Stack.Screen name="order/[id]/index" />
         <Stack.Screen name="order/[id]/bill" />
         <Stack.Screen name="menu-item/[id]" />
+        <Stack.Screen name="holidays" />
       </Stack.Protected>
       <Stack.Protected guard={!isLoggedIn}>
         <Stack.Screen name="login" />

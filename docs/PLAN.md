@@ -37,6 +37,13 @@ Native changes later would need a reinstall, which can't happen in person again 
 - [ ] Parents take real orders in parallel with the notebook for one week
 - [ ] Fix what real use reveals; drop the notebook when parents are confident
 
+## Phase 1b: holidays and online ordering (Claude builds, 6 Nov)
+- [x] DB: stored `paid_paise` with a partial index for Dues; faster customer search; public menu cached in memory (D9 revised)
+- [x] Kitchen holidays: table + API, Settings screen, menu-page notice, New Order warning (D18)
+- [ ] Customer addresses with labels, shared by the app and the web (D19)
+- [ ] Web order form on the menu link; orders arrive as requests (D19)
+- [ ] App: accept / decline requests, badge on Orders (D19)
+
 ## Phase 2: learn the codebase (Karan, with Claude, alongside Phase 1 week 2)
 For each module: Claude walks through it, Karan explains it back, answers interview questions, then rewrites
 or extends one piece himself. Log each session in `LEARNING_LOG.md`.

@@ -1,4 +1,4 @@
-import { groupMenu, menuPrice, minLabel, renderMenuPage, type MenuPageItem } from './menu-page.js';
+import { groupMenu, holidayLines, menuPrice, minLabel, renderMenuPage, type MenuPageItem } from './menu-page.js';
 
 const item = (over: Partial<MenuPageItem>): MenuPageItem => ({
   name: 'Item',
@@ -61,5 +61,36 @@ describe('renderMenuPage', () => {
     expect(html).toContain('Minimum Quantity 4 plates');
     expect(html).toContain('content="https://example.com/menu/cover.jpg?v=2"');
     expect(html).not.toContain('<Vada>');
+  });
+});
+
+describe('holidayLines', () => {
+  const today = '2026-11-06';
+
+  it('words single days, ranges and holidays already under way', () => {
+    expect(
+      holidayLines(
+        [
+          { startDate: '2026-11-06', endDate: '2026-11-06', note: null },
+          { startDate: '2026-11-04', endDate: '2026-11-08', note: 'Diwali' },
+          { startDate: '2026-11-20', endDate: '2026-11-20', note: null },
+          { startDate: '2026-11-24', endDate: '2026-11-26', note: 'Wedding' },
+        ],
+        today,
+      ),
+    ).toEqual([
+      'Kitchen closed today',
+      'Kitchen closed today – Sun, 8 Nov · Diwali',
+      'Kitchen closed Fri, 20 Nov',
+    ]);
+  });
+
+  it('leaves out holidays more than 60 days away', () => {
+    expect(holidayLines([{ startDate: '2027-01-20', endDate: '2027-01-21', note: null }], today)).toEqual([]);
+  });
+
+  it('shows the notice on the page, escaped', () => {
+    const html = renderMenuPage([], 'https://example.com', [{ startDate: today, endDate: today, note: '<Diwali>' }], today);
+    expect(html).toContain('<p class="closed">Kitchen closed today · &lt;Diwali&gt;</p>');
   });
 });

@@ -4,6 +4,7 @@ import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-
 import { Badge, Button, Card, Chip, FormError, Icon } from '@/components/ui';
 import { longDate, parseISO, phone, quantity, rupees, time12, toISO } from '@/lib/format';
 import { type TranslationKey, useI18n } from '@/lib/i18n';
+import { holidayOn, useHolidays } from '@/lib/queries';
 import { colors, font, radius, serif, space } from '@/lib/theme';
 import { PAYMENT_MODES } from '@/lib/types';
 import { type CartLine, lineTotal, type OrderDraft, rupeesToPaise, subtotal, unitPrice } from './cart';
@@ -42,6 +43,8 @@ export function ReviewStep({
 }) {
   const { t, locale } = useI18n();
   const [editing, setEditing] = useState<Editing>(null);
+  // Warn, don't block: parents may take an order on a holiday by choice (D18).
+  const holiday = holidayOn(useHolidays().data, draft.deliveryDate);
 
   const itemsTotal = subtotal(draft.lines);
   const total = itemsTotal - draft.discountPaise;
@@ -223,6 +226,12 @@ export function ReviewStep({
           </View>
           <Text style={styles.link}>{t('common.change')}</Text>
         </Pressable>
+        {holiday ? (
+          <Text style={styles.holiday}>
+            {t('review.holiday')}
+            {holiday.note ? ` · ${holiday.note}` : ''}
+          </Text>
+        ) : null}
 
         <Text style={[styles.muted, styles.timeLabel]}>{t('review.time')}</Text>
         <View style={styles.chips}>
@@ -381,6 +390,7 @@ const styles = StyleSheet.create({
     padding: space.md,
     minHeight: 64,
   },
+  holiday: { color: colors.danger, fontSize: font.label, fontWeight: '700', marginTop: space.xs },
   dateText: { fontSize: font.body, fontWeight: '700', color: colors.text },
   timeLabel: { marginTop: space.sm },
   advanceRow: {
