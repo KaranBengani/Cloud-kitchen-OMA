@@ -34,10 +34,12 @@ The grey **Mummy's Kitchen (Test)** app is only for Karan's testing. Real orders
 - **Forgot the PIN**: ask Karan.
 
 ## For Karan: releasing a change
-1. Publish to the Test app: `npm run update:staging -w mobile -- --message "..."`
-2. Check it in **Mummy's Kitchen (Test)** (Settings → Check for update).
-3. Publish the same change to production: `npm run update:production -w mobile -- --message "..."`
-4. API changes deploy on merge to `main` (both Render services). Database changes are migrations, run on start.
+1. Open the feature PR against **`staging`** and merge it there. The staging API (`oma-api-stg`) deploys from
+   `staging`; database migrations run on start against the Neon `staging` branch.
+2. Publish the app to the Test app from the `staging` branch: `npm run update:staging -w mobile -- --message "..."`
+3. Check it in **Mummy's Kitchen (Test)** (Settings → Check for update).
+4. Open a PR from `staging` into **`main`** and merge it: the production API (`oma-api`) deploys.
+5. Publish the same app change to production from `main`: `npm run update:production -w mobile -- --message "..."`
 
 Always use these scripts. They pass `--environment`, so the update gets that environment's API URL from EAS; a bare
 `eas update` would bake in the laptop's `.env` URL and point the phones at nothing.
