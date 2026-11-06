@@ -13,6 +13,7 @@ import { addressSnapshot, findOrCreateCustomer, saveAddress } from '../customers
 import { Customer } from '../customers/customer.entity.js';
 import { HolidaysService, holidayOn } from '../holidays/holidays.service.js';
 import { MenuItem } from '../menu/menu-item.entity.js';
+import { PushService } from '../push/push.service.js';
 import type {
   CreateOrderDto,
   OrderInput,
@@ -65,6 +66,7 @@ export class OrdersService {
   constructor(
     @InjectDataSource() private readonly db: DataSource,
     private readonly holidays: HolidaysService,
+    private readonly push: PushService,
   ) {}
 
   // Upcoming by default (today onwards, IST), or a date range for the calendar.
@@ -208,7 +210,7 @@ export class OrdersService {
       throw new BadRequestException('The kitchen is closed on that date. Please pick another day.');
     }
 
-    return this.db.transaction(async (tx) => {
+    const receipt = await this.db.transaction(async (tx) => {
       // Only items customers can see on the menu: available and not deleted (soft-deleted rows are
       // excluded from find() by default).
       const ids = [...new Set(dto.items.map((i) => i.menuItemId))];
@@ -244,6 +246,16 @@ export class OrdersService {
       await tx.getRepository(OrderItem).insert(lines.map((l) => ({ ...l, orderId: order.id })));
       return { orderId: order.id, totalPaise };
     });
+
+    // After the commit, and not awaited: the customer's confirmation doesn't wait for Expo's servers.
+    void this.push.newWebOrder({
+      orderId: receipt.orderId,
+      name: dto.name.trim(),
+      deliveryDate: dto.deliveryDate,
+      itemCount: dto.items.length,
+      totalPaise: receipt.totalPaise,
+    });
+    return receipt;
   }
 
   private checkWebOrderRate() {

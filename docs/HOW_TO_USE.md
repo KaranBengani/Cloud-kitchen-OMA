@@ -45,3 +45,13 @@ Always use these scripts. They pass `--environment`, so the update gets that env
 `eas update` would bake in the laptop's `.env` URL and point the phones at nothing.
 
 A change that adds a native module or a plugin in `app.json` needs a new APK and a reinstall, not an update.
+Bump `version` in `app.json` when you do (runtime policy `appVersion`): updates published afterwards only reach the
+new APK, so phones still on the old one never get JavaScript that needs a module they don't have.
+
+## For Karan: push notifications (D20)
+- Firebase project with two Android apps, `com.karanbengani.oma` and `com.karanbengani.oma.stg`. Its
+  `google-services.json` (covers both) is the EAS file variable `GOOGLE_SERVICES_JSON` in `preview` and `production`.
+- FCM V1 service account key uploaded to EAS: `npx eas-cli credentials` → Android → each profile → Google Service
+  Account → FCM V1.
+- Each logged-in phone registers on app start; a web order sends "New order request #N" to all of them.
+  A phone that logs out unregisters; one that uninstalls is removed the next time a notification fails.

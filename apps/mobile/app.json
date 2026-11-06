@@ -3,7 +3,7 @@
     "name": "Mummy's Kitchen",
     "slug": "oma",
     "owner": "karanbengani",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "oma",
@@ -32,7 +32,13 @@
       "expo-secure-store",
       "expo-localization",
       "@react-native-community/datetimepicker",
-      "expo-sharing"
+      "expo-sharing",
+      [
+        "expo-notifications",
+        {
+          "color": "#C46A22"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
