@@ -2,7 +2,10 @@
 export const MENU_UNITS = ['kg', 'pc', 'plate', 'bowl', 'roll', 'pizza'] as const;
 export type MenuUnit = (typeof MENU_UNITS)[number];
 export const PAYMENT_MODES = ['cash', 'upi_papa', 'upi_mummy'] as const;
-export type OrderStatus = 'booked' | 'ready' | 'delivered' | 'cancelled';
+// 'requested' / 'declined': web orders before and after the parents' decision (D19).
+export type OrderStatus = 'requested' | 'booked' | 'ready' | 'delivered' | 'cancelled' | 'declined';
+export const ADDRESS_LABELS = ['home', 'office', 'family', 'other'] as const;
+export type AddressLabel = (typeof ADDRESS_LABELS)[number];
 export type Fulfilment = 'pickup' | 'parcel';
 export type PaymentMode = (typeof PAYMENT_MODES)[number];
 
@@ -18,11 +21,21 @@ export interface MenuItem {
   sortOrder: number;
 }
 
+// An entry in a customer's address book (D19), most recently used first.
+export interface SavedAddress {
+  id: number;
+  label: AddressLabel;
+  recipientName: string | null;
+  recipientPhone: string | null;
+  address: string;
+}
+
 export interface Customer {
   id: number;
   name: string;
   phone: string | null;
-  address: string | null;
+  address: string | null; // the most recently used saved address
+  addresses?: SavedAddress[]; // on customer search and lookups, not on an order's customer
   duePaise?: number; // only on search results: unpaid balance across their orders
 }
 
@@ -56,6 +69,8 @@ export interface Order {
   address: string | null;
   notes: string | null;
   status: OrderStatus;
+  source: 'app' | 'web';
+  requestedName: string | null; // a web order's typed name, when it differs from the saved one
   subtotalPaise: number; // sum of line totals
   discountPaise: number; // order-level discount (D13)
   totalPaise: number; // subtotal − discount: what the customer owes
@@ -85,6 +100,7 @@ export interface OrderInput {
   deliveryTime?: string | null;
   fulfilment: Fulfilment;
   address?: string | null;
+  addressLabel?: AddressLabel; // for a new address; the server picks Home/Other if omitted
   notes?: string | null;
   discountPaise?: number;
   items: OrderLineInput[];
@@ -109,4 +125,9 @@ export interface Holiday {
   startDate: string;
   endDate: string;
   note: string | null;
+}
+
+// Kitchen-wide switches (D20), Settings screen.
+export interface KitchenSettings {
+  onlineOrdering: boolean;
 }

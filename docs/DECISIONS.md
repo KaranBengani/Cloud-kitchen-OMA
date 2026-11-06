@@ -137,11 +137,31 @@ the link don't wake the Neon database (compute is billed for time awake, not que
 - **Privacy:** without login the page never reveals saved addresses or details for a typed number.
 - **Addresses:** `customer_addresses` (label Home / Office / Friend or family / Other, optional recipient name and
   phone, address text), deduplicated per customer. The app's customer list and New Order read the same rows.
-- **Web orders arrive as "requested"** and parents **accept** (→ booked) or **decline**. The customer's confirmation
-  screen offers "Send order on WhatsApp", which is how parents are notified (no push notifications: a new native module
-  would need reinstalls).
+- **Web orders arrive as "requested"** and parents **accept** (→ booked) or **decline**. Parents hear about new
+  requests by push notification and confirm to the customer from the app (D20); the customer's page no longer asks
+  them to send the order on WhatsApp.
 - **Minimum quantities are not enforced** on the web: below-minimum orders are reviewed by parents like any request.
 - **Delivery time** is any time the customer picks (optional), not fixed slots. Same-day orders ask the customer to call first;
   off-menu items: place the order, then call. Delivery is by Rapido/Uber parcel, paid by the customer (D12).
-- **Abuse limits:** strict rate limit on the public order endpoint, a honeypot field, caps on items and text length.
+- **Abuse limits:** 10 tries an hour per network on `POST /order`, 30 web orders an hour overall, a honeypot field,
+  caps on items (40) and text lengths. Rate limits count the visitor's real address from Cloudflare's
+  `CF-Connecting-IP` (Render's proxy would otherwise make everyone share one limit; this also stops a stranger's wrong
+  PINs from locking the family out of login).
+- **Statuses:** `requested → booked` (Accept) or `requested → declined` (final). Requests and declined orders are
+  left out of the day list, calendar, Dues and customer balances. Orders tab shows requests on top with a badge; the
+  app refreshes when brought to the foreground (no polling, so the database can sleep).
 
+
+## D20. Online ordering switch, confirmations and new-order alerts (Accepted, 6 Nov 2026; Claude builds)
+- **Switch:** Settings → Online orders (`kitchen_settings`, one row, starts **off**). Off: the menu link is a plain
+  menu with the WhatsApp button, and `POST /order` answers 403. Cached in server memory like the menu; the page itself
+  is cached for a minute, so a change shows within about a minute.
+- **Confirmation to the customer:** after Accept, the app offers "Send confirmation", which opens the customer's
+  WhatsApp chat with the order typed in (date, pickup/delivery, items, total). Also a button on accepted web orders.
+  WhatsApp Business API was not used: it costs per message and needs Meta approval; parents tapping send is free.
+- **New-order alerts:** push notifications through Expo's push service (free; Android delivery via Firebase Cloud
+  Messaging). The app registers its push token after login; a web order sends one notification to every registered
+  phone, and tapping it opens the request. This adds a native module, so it ships in app version 1.1.0, which parents
+  install once; over-the-air updates for 1.0.0 stay JavaScript-only.
+- **Staging branch:** `oma-api-stg` deploys from the `staging` branch. Feature PRs merge into `staging` first, get
+  tested in the Test app, then `staging` merges into `main` (production).

@@ -1,12 +1,28 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  HttpException,
+  HttpStatus,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
-import { Between, DataSource, type EntityManager, In, MoreThanOrEqual } from 'typeorm';
+import { Between, DataSource, type EntityManager, In, MoreThanOrEqual, Not } from 'typeorm';
 import { todayIST } from '../common/today.js';
+import { addressSnapshot, findOrCreateCustomer, saveAddress } from '../customers/address-book.js';
 import { Customer } from '../customers/customer.entity.js';
+import { HolidaysService, holidayOn } from '../holidays/holidays.service.js';
 import { MenuItem } from '../menu/menu-item.entity.js';
-import type { CreateOrderDto, OrderInput, PaymentInput, UpdateOrderDto, UpdateStatusDto } from './order.dto.js';
+import type {
+  CreateOrderDto,
+  OrderInput,
+  PaymentInput,
+  UpdateOrderDto,
+  UpdateStatusDto,
+  WebOrderDto,
+} from './order.dto.js';
 import { OrderItem } from './order-item.entity.js';
-import { OPEN_BALANCE, Order } from './order.entity.js';
+import { OPEN_BALANCE, Order, type OrderStatus } from './order.entity.js';
 import { Payment } from './payment.entity.js';
 import { priceOrder } from './pricing.js';
 
@@ -25,18 +41,59 @@ export interface DueRow {
   balancePaise: number;
 }
 
+// What the customer's page gets back after placing an order.
+export interface WebOrderReceipt {
+  orderId: number;
+  totalPaise: number;
+}
+
+// Which status changes the app may make. Requests (web orders) are accepted or declined first;
+// declined is final. Everything else moves freely, as before (e.g. reopening a cancelled order).
+const ALLOWED_FROM: Partial<Record<OrderStatus, OrderStatus[]>> = {
+  requested: ['booked', 'declined'],
+  declined: [],
+};
+
+// Backstop on top of the per-network rate limit: a burst of web orders from many networks at once
+// is almost certainly abuse, not customers.
+const WEB_ORDERS_PER_HOUR = 30;
+
 @Injectable()
 export class OrdersService {
-  constructor(@InjectDataSource() private readonly db: DataSource) {}
+  private webOrderTimes: number[] = [];
+
+  constructor(
+    @InjectDataSource() private readonly db: DataSource,
+    private readonly holidays: HolidaysService,
+  ) {}
 
   // Upcoming by default (today onwards, IST), or a date range for the calendar.
+  // Web requests and declined orders aren't part of the kitchen's plan, so they're left out here;
+  // requests have their own list.
   async list(from?: string, to?: string): Promise<OrderView[]> {
     const start = from ?? todayIST();
     const orders = await this.db.getRepository(Order).find({
-      where: { deliveryDate: to ? Between(start, to) : MoreThanOrEqual(start) },
+      where: {
+        deliveryDate: to ? Between(start, to) : MoreThanOrEqual(start),
+        status: Not(In(['requested', 'declined'])),
+      },
       // TypeORM 1.x: relations are an object, not a string array.
       relations: { customer: true, items: true, payments: true },
-      order: { deliveryDate: 'ASC', deliveryTime: { direction: 'ASC', nulls: 'LAST' }, id: 'ASC' },
+      order: {
+        deliveryDate: 'ASC',
+        deliveryTime: { direction: 'ASC', nulls: 'LAST' },
+        id: 'ASC',
+      },
+    });
+    return orders.map(toView);
+  }
+
+  // Web orders waiting for the parents' decision, oldest first, whatever their date.
+  async requests(): Promise<OrderView[]> {
+    const orders = await this.db.getRepository(Order).find({
+      where: { status: 'requested' },
+      relations: { customer: true, items: true, payments: true },
+      order: { createdAt: 'ASC' },
     });
     return orders.map(toView);
   }
@@ -59,7 +116,7 @@ export class OrdersService {
 
       const order = await tx.getRepository(Order).save(
         tx.getRepository(Order).create({
-          ...this.orderFields(dto),
+          ...(await this.orderFields(tx, dto)),
           discountPaise,
           totalPaise,
           status: 'booked',
@@ -67,7 +124,11 @@ export class OrdersService {
         }),
       );
       await tx.getRepository(OrderItem).insert(lines.map((l) => ({ ...l, orderId: order.id })));
-      if (dto.advance) await this.insertPayment(tx, order.id, { isAdvance: true, ...dto.advance });
+      if (dto.advance)
+        await this.insertPayment(tx, order.id, {
+          isAdvance: true,
+          ...dto.advance,
+        });
 
       return this.get(order.id, tx);
     });
@@ -79,7 +140,11 @@ export class OrdersService {
       const previous = await tx.getRepository(OrderItem).findBy({ orderId: id });
       const { lines, discountPaise, totalPaise } = await this.buildLines(tx, dto, previous);
 
-      await this.updateWithVersion(tx, id, dto.version, { ...this.orderFields(dto), discountPaise, totalPaise });
+      await this.updateWithVersion(tx, id, dto.version, {
+        ...(await this.orderFields(tx, dto)),
+        discountPaise,
+        totalPaise,
+      });
       // Replace all lines: simpler than diffing, and safe because we hold the order's row lock
       // (taken by the UPDATE above) until this transaction commits.
       await tx.getRepository(OrderItem).delete({ orderId: id });
@@ -91,6 +156,13 @@ export class OrdersService {
 
   setStatus(id: number, dto: UpdateStatusDto): Promise<OrderView> {
     return this.db.transaction(async (tx) => {
+      const current = await tx.getRepository(Order).findOne({ where: { id }, select: { id: true, status: true } });
+      if (!current) throw new NotFoundException(`Order ${id} not found`);
+      const allowed = ALLOWED_FROM[current.status];
+      if (dto.status === 'declined' ? current.status !== 'requested' : allowed && !allowed.includes(dto.status)) {
+        throw new BadRequestException(`An order that is ${current.status} can't be changed to ${dto.status}`);
+      }
+      // The version check still catches someone else changing the status in between.
       await this.updateWithVersion(tx, id, dto.version, { status: dto.status });
       return this.get(id, tx);
     });
@@ -119,6 +191,68 @@ export class OrdersService {
       await this.adjustPaid(tx, orderId, -rows[0].amount_paise);
       return this.get(orderId, tx);
     });
+  }
+
+  // A customer's order from the menu link (DECISIONS.md D19). It arrives as 'requested': nothing is
+  // promised until the parents accept it in the app. Customer and address are matched by phone and
+  // address text, so a returning customer never becomes a second row.
+  async createWebOrder(dto: WebOrderDto): Promise<WebOrderReceipt> {
+    this.checkWebOrderRate();
+    const today = todayIST();
+    const latest = new Date(`${today}T00:00:00Z`);
+    latest.setUTCDate(latest.getUTCDate() + 60);
+    if (dto.deliveryDate < today || dto.deliveryDate > latest.toISOString().slice(0, 10)) {
+      throw new BadRequestException('Pick a date between today and the next two months');
+    }
+    if (holidayOn(await this.holidays.upcoming(), dto.deliveryDate)) {
+      throw new BadRequestException('The kitchen is closed on that date. Please pick another day.');
+    }
+
+    return this.db.transaction(async (tx) => {
+      // Only items customers can see on the menu: available and not deleted (soft-deleted rows are
+      // excluded from find() by default).
+      const ids = [...new Set(dto.items.map((i) => i.menuItemId))];
+      const available = await tx.getRepository(MenuItem).find({ where: { id: In(ids), isAvailable: true } });
+      if (available.length !== ids.length) {
+        throw new BadRequestException('Some items are no longer on the menu. Please reload the page.');
+      }
+
+      const customer = await findOrCreateCustomer(tx, dto.name, dto.phone);
+      const delivery = dto.fulfilment === 'parcel' && dto.address ? dto.address : null;
+      const addressId = delivery ? await saveAddress(tx, customer.id, delivery) : null;
+      const { lines, totalPaise } = await this.buildLines(tx, {
+        items: dto.items,
+      });
+
+      const order = await tx.getRepository(Order).save(
+        tx.getRepository(Order).create({
+          customerId: customer.id,
+          deliveryDate: dto.deliveryDate,
+          deliveryTime: dto.deliveryTime ?? null,
+          fulfilment: dto.fulfilment,
+          address: delivery ? addressSnapshot(delivery) : null,
+          addressId,
+          notes: dto.notes?.trim() || null,
+          requestedName: customer.nameDiffers ? dto.name.trim() : null,
+          source: 'web',
+          status: 'requested',
+          discountPaise: 0,
+          totalPaise,
+          version: 1,
+        }),
+      );
+      await tx.getRepository(OrderItem).insert(lines.map((l) => ({ ...l, orderId: order.id })));
+      return { orderId: order.id, totalPaise };
+    });
+  }
+
+  private checkWebOrderRate() {
+    const hourAgo = Date.now() - 3_600_000;
+    this.webOrderTimes = this.webOrderTimes.filter((t) => t > hourAgo);
+    if (this.webOrderTimes.length >= WEB_ORDERS_PER_HOUR) {
+      throw new HttpException('Too many orders right now. Please call or WhatsApp us.', HttpStatus.TOO_MANY_REQUESTS);
+    }
+    this.webOrderTimes.push(Date.now());
   }
 
   // Who owes money, and who we owe. Reads only orders in the IDX_orders_open_balance partial index,
@@ -177,12 +311,14 @@ export class OrdersService {
   // Snapshots name, unit and price from the menu (DECISIONS.md D7). When editing, lines that were
   // already on the order keep their original menu price, so a menu price change since booking
   // doesn't silently reprice an existing order. Custom lines (no menuItemId, D14) use what was typed.
-  private async buildLines(tx: EntityManager, dto: OrderInput, previous: OrderItem[] = []) {
+  private async buildLines(
+    tx: EntityManager,
+    dto: Pick<OrderInput, 'items' | 'discountPaise'>,
+    previous: OrderItem[] = [],
+  ) {
     const ids = [...new Set(dto.items.flatMap((i) => (i.menuItemId == null ? [] : [i.menuItemId])))];
     // withDeleted: an item removed from the menu can still appear on an order booked before that.
-    const menu = ids.length
-      ? await tx.getRepository(MenuItem).find({ where: { id: In(ids) }, withDeleted: true })
-      : [];
+    const menu = ids.length ? await tx.getRepository(MenuItem).find({ where: { id: In(ids) }, withDeleted: true }) : [];
     const byId = new Map(menu.map((m) => [m.id, m]));
     const missing = ids.filter((id) => !byId.has(id));
     if (missing.length) throw new BadRequestException(`Unknown menu items: ${missing.join(', ')}`);
@@ -191,11 +327,21 @@ export class OrdersService {
     // Name, unit and menu price for each line, from the menu or from the custom line itself.
     const sources = dto.items.map((i) => {
       if (i.menuItemId == null) {
-        return { menuItemId: null, name: i.name!.trim(), unit: i.unit!, menuPricePaise: i.unitPricePaise! };
+        return {
+          menuItemId: null,
+          name: i.name!.trim(),
+          unit: i.unit!,
+          menuPricePaise: i.unitPricePaise!,
+        };
       }
       const item = byId.get(i.menuItemId)!;
       const menuPricePaise = previousPrice.get(item.id) ?? item.pricePaise;
-      return { menuItemId: item.id, name: item.name, unit: item.unit, menuPricePaise };
+      return {
+        menuItemId: item.id,
+        name: item.name,
+        unit: item.unit,
+        menuPricePaise,
+      };
     });
 
     let priced;
@@ -223,13 +369,23 @@ export class OrdersService {
     };
   }
 
-  private orderFields(dto: OrderInput) {
+  // A parcel address is also saved to the customer's address book (or matched to an existing entry),
+  // and the order points at that entry. The text is still copied onto the order (see Order.address).
+  private async orderFields(tx: EntityManager, dto: OrderInput) {
+    const address = dto.fulfilment === 'parcel' ? dto.address?.trim() || null : null;
+    const addressId = address
+      ? await saveAddress(tx, dto.customerId, {
+          address,
+          label: dto.addressLabel,
+        })
+      : null;
     return {
       customerId: dto.customerId,
       deliveryDate: dto.deliveryDate,
       deliveryTime: dto.deliveryTime ?? null,
       fulfilment: dto.fulfilment,
-      address: dto.address ?? null,
+      address,
+      addressId,
       notes: dto.notes ?? null,
     };
   }

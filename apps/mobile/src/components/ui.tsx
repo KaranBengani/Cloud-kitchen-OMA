@@ -140,6 +140,8 @@ const badgeTones: Record<Tone, { bg: string; fg: string }> = {
 };
 
 const STATUS_TONE: Record<OrderStatus, Tone> = {
+  requested: 'danger',
+  declined: 'muted',
   booked: 'accent',
   ready: 'success',
   delivered: 'neutral',
@@ -147,6 +149,8 @@ const STATUS_TONE: Record<OrderStatus, Tone> = {
 };
 
 const STATUS_ICON: Record<OrderStatus, IconName> = {
+  requested: 'globe-outline',
+  declined: 'close-circle-outline',
   booked: 'bookmark-outline',
   ready: 'checkmark-circle-outline',
   delivered: 'checkmark-done',

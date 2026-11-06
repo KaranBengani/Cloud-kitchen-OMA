@@ -1,4 +1,15 @@
-import { Column, CreateDateColumn, Entity, Index, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  Index,
+  OneToMany,
+  PrimaryGeneratedColumn,
+  type Relation,
+  UpdateDateColumn,
+} from 'typeorm';
+// Customer ↔ CustomerAddress import each other: Relation<T> avoids the ES-module load-order crash.
+import { CustomerAddress } from './customer-address.entity.js';
 
 @Entity({ name: 'customers' })
 export class Customer {
@@ -14,8 +25,9 @@ export class Customer {
   @Column({ type: 'varchar', length: 15, nullable: true })
   phone: string | null;
 
-  @Column({ type: 'text', nullable: true })
-  address: string | null;
+  // Addresses moved to their own table (DECISIONS.md D19): one customer can send food to several places.
+  @OneToMany(() => CustomerAddress, (address) => address.customer)
+  addresses: Relation<CustomerAddress[]>;
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;

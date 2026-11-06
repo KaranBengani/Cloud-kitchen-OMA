@@ -5,7 +5,7 @@ import { MODE_ICON, PaymentSheet } from '@/components/payment-sheet';
 import { Screen } from '@/components/screen';
 import { Badge, Button, Card, ErrorState, Icon, Skeleton, StatusBadge } from '@/components/ui';
 import { ApiError } from '@/lib/api';
-import { whatsappUrl } from '@/lib/bill';
+import { confirmationText, whatsappUrl } from '@/lib/bill';
 import { longDate, phone, quantity, rupees, shortDate, time12 } from '@/lib/format';
 import { useI18n } from '@/lib/i18n';
 import { useDeletePayment, useOrder, useSetOrderStatus } from '@/lib/queries';
@@ -24,7 +24,11 @@ export default function OrderDetailScreen() {
   const order = useOrder(Number(id));
 
   return (
-    <Screen title={t('order.title', { id })} back right={order.data ? <StatusBadge status={order.data.status} /> : null}>
+    <Screen
+      title={t('order.title', { id })}
+      back
+      right={order.data ? <StatusBadge status={order.data.status} /> : null}
+    >
       {order.isPending ? <Skeleton count={2} /> : null}
       {order.isError ? <ErrorState error={order.error} onRetry={() => order.refetch()} /> : null}
       {order.data ? <OrderDetail order={order.data} onReload={() => order.refetch()} /> : null}
@@ -40,9 +44,20 @@ function OrderDetail({ order, onReload }: { order: Order; onReload: () => void }
   const [paying, setPaying] = useState(false);
   const next = NEXT[order.status];
 
+  // Opens the customer's WhatsApp chat with the confirmation typed in; the parent just taps send.
+  const sendConfirmation = (accepted: Order) =>
+    Linking.openURL(whatsappUrl(confirmationText(accepted), accepted.customer.phone));
+
   const changeStatus = async (status: OrderStatus) => {
     try {
-      await setStatus.mutateAsync({ id: order.id, status, version: order.version });
+      const saved = await setStatus.mutateAsync({ id: order.id, status, version: order.version });
+      // Web customers are waiting to hear back, so accepting offers the confirmation message straight away.
+      if (order.status === 'requested' && status === 'booked' && saved.customer.phone) {
+        Alert.alert(t('order.acceptedSend', { name: saved.customer.name }), undefined, [
+          { text: t('order.later'), style: 'cancel' },
+          { text: t('order.sendConfirmation'), onPress: () => sendConfirmation(saved) },
+        ]);
+      }
     } catch (e) {
       // 409: another phone changed this order since we loaded it (D6). Show the banner instead of guessing.
       if (e instanceof ApiError && e.status === 409) setConflict(true);
@@ -50,19 +65,30 @@ function OrderDetail({ order, onReload }: { order: Order; onReload: () => void }
     }
   };
 
+  const decline = () =>
+    Alert.alert(t('order.declineConfirm', { id: order.id }), undefined, [
+      { text: t('common.no'), style: 'cancel' },
+      { text: t('order.decline'), style: 'destructive', onPress: () => changeStatus('declined') },
+    ]);
+
+  // Requests are declined, not cancelled; a declined request is final (D19).
   const more = () =>
     Alert.alert(t('order.title', { id: order.id }), undefined, [
-      order.status === 'cancelled'
-        ? { text: t('order.reopen'), onPress: () => changeStatus('booked') }
-        : {
-            text: t('order.cancel'),
-            style: 'destructive',
-            onPress: () =>
-              Alert.alert(t('order.cancelConfirm', { id: order.id }), undefined, [
-                { text: t('common.no'), style: 'cancel' },
-                { text: t('common.yes'), style: 'destructive', onPress: () => changeStatus('cancelled') },
-              ]),
-          },
+      order.status === 'requested'
+        ? { text: t('order.decline'), style: 'destructive', onPress: decline }
+        : order.status === 'declined'
+          ? { text: t('common.cancel'), style: 'cancel' }
+          : order.status === 'cancelled'
+            ? { text: t('order.reopen'), onPress: () => changeStatus('booked') }
+            : {
+                text: t('order.cancel'),
+                style: 'destructive',
+                onPress: () =>
+                  Alert.alert(t('order.cancelConfirm', { id: order.id }), undefined, [
+                    { text: t('common.no'), style: 'cancel' },
+                    { text: t('common.yes'), style: 'destructive', onPress: () => changeStatus('cancelled') },
+                  ]),
+              },
       { text: t('common.cancel'), style: 'cancel' },
     ]);
 
@@ -118,12 +144,48 @@ function OrderDetail({ order, onReload }: { order: Order; onReload: () => void }
           ) : null}
         </Card>
 
+        {order.status === 'requested' ? (
+          <View style={styles.request}>
+            <Text style={styles.requestTitle}>{t('order.webRequest')}</Text>
+            <Text style={styles.body}>{t('order.webRequestHint')}</Text>
+            {order.requestedName ? (
+              <Text style={styles.strong}>{t('order.typedName', { name: order.requestedName })}</Text>
+            ) : null}
+            <View style={styles.row}>
+              <Button
+                label={t('order.decline')}
+                variant="danger"
+                onPress={decline}
+                disabled={setStatus.isPending}
+                style={styles.flex}
+              />
+              <Button
+                label={t('order.accept')}
+                icon="checkmark-circle-outline"
+                onPress={() => changeStatus('booked')}
+                loading={setStatus.isPending}
+                style={styles.flex}
+              />
+            </View>
+          </View>
+        ) : null}
+
         {next ? (
           <Button
             label={t(next.label)}
             icon="checkmark-circle-outline"
             onPress={() => changeStatus(next.status)}
             loading={setStatus.isPending}
+          />
+        ) : null}
+
+        {/* Also here, for when "Later" was tapped after accepting. */}
+        {order.source === 'web' && order.status === 'booked' && customerPhone ? (
+          <Button
+            label={t('order.sendConfirmation')}
+            icon="logo-whatsapp"
+            variant="whatsapp"
+            onPress={() => sendConfirmation(order)}
           />
         ) : null}
 
@@ -271,6 +333,8 @@ function OrderDetail({ order, onReload }: { order: Order; onReload: () => void }
 }
 
 const styles = StyleSheet.create({
+  request: { gap: space.sm, padding: space.md, borderRadius: radius.lg, backgroundColor: colors.dangerSoft },
+  requestTitle: { fontFamily: serif, fontSize: font.title, fontWeight: '700', color: colors.danger },
   flex: { flex: 1 },
   content: { gap: space.md, paddingBottom: space.xl },
   row: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
@@ -294,7 +358,13 @@ const styles = StyleSheet.create({
   line: { flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingVertical: space.xs },
   rateRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6 },
   struck: { fontSize: font.label, color: colors.muted, textDecorationLine: 'line-through' },
-  totals: { backgroundColor: colors.tint, borderRadius: radius.md, padding: space.md, gap: space.xs, marginTop: space.sm },
+  totals: {
+    backgroundColor: colors.tint,
+    borderRadius: radius.md,
+    padding: space.md,
+    gap: space.xs,
+    marginTop: space.sm,
+  },
   totalRow: { flexDirection: 'row', justifyContent: 'space-between' },
   discount: { color: colors.success, fontWeight: '700' },
   totalLabel: { fontFamily: serif, fontSize: font.title, fontWeight: '700', color: colors.text },

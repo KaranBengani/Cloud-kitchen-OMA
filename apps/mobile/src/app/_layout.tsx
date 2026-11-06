@@ -1,4 +1,4 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { focusManager, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
@@ -10,6 +10,10 @@ import { I18nProvider } from '@/lib/i18n';
 import { colors } from '@/lib/theme';
 
 SplashScreen.preventAutoHideAsync();
+
+// React Query only knows about browser tabs. Tell it when the app comes to the foreground, so lists
+// refresh then (new web orders show up when a parent opens the app) without polling the server.
+AppState.addEventListener('change', (state) => focusManager.setFocused(state === 'active'));
 
 const queryClient = new QueryClient({
   defaultOptions: {

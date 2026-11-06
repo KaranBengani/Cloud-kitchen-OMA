@@ -4,7 +4,7 @@ import type { ComponentProps } from 'react';
 import { type ColorValue, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useI18n } from '@/lib/i18n';
-import { useDues } from '@/lib/queries';
+import { useDues, useRequests } from '@/lib/queries';
 import { colors } from '@/lib/theme';
 
 type IconName = ComponentProps<typeof Ionicons>['name'];
@@ -18,6 +18,7 @@ export default function TabsLayout() {
   const { bottom } = useSafeAreaInsets();
   const dues = useDues();
   const owing = dues.data?.filter((d) => d.balancePaise > 0).length ?? 0;
+  const requests = useRequests().data?.length ?? 0;
 
   return (
     <Tabs
@@ -37,7 +38,16 @@ export default function TabsLayout() {
         },
       }}
     >
-      <Tabs.Screen name="index" options={{ title: t('tabs.orders'), tabBarIcon: icon('receipt-outline') }} />
+      <Tabs.Screen
+        name="index"
+        options={{
+          title: t('tabs.orders'),
+          tabBarIcon: icon('receipt-outline'),
+          // New web orders waiting for Accept / Decline (D19).
+          tabBarBadge: requests > 0 ? requests : undefined,
+          tabBarBadgeStyle: { backgroundColor: colors.danger },
+        }}
+      />
       <Tabs.Screen name="menu" options={{ title: t('tabs.menu'), tabBarIcon: icon('restaurant-outline') }} />
       {/* Not a real tab: the raised centre button opens the New Order flow as its own screen. */}
       <Tabs.Screen

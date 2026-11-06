@@ -1,6 +1,16 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from './api';
-import type { Customer, Due, Holiday, MenuItem, Order, OrderInput, OrderStatus, PaymentInput } from './types';
+import type {
+  Customer,
+  Due,
+  Holiday,
+  KitchenSettings,
+  MenuItem,
+  Order,
+  OrderInput,
+  OrderStatus,
+  PaymentInput,
+} from './types';
 
 // One place for every server call the screens make. In React web you'd write the same hooks;
 // React Query is identical on native. Query keys group data so a mutation can refresh what it affects.
@@ -11,6 +21,7 @@ export const keys = {
   order: (id: number) => ['order', id] as const,
   dues: ['dues'] as const,
   holidays: ['holidays'] as const,
+  settings: ['settings'] as const,
 };
 
 const json = (method: string, body: unknown): RequestInit => ({ method, body: JSON.stringify(body) });
@@ -59,6 +70,10 @@ export const useOrders = (from?: string, to?: string) =>
       return api<Order[]>(`/orders?${params}`);
     },
   });
+
+// Web orders waiting for Accept / Decline (D19). Under ['orders'], so every order write refreshes it.
+export const useRequests = () =>
+  useQuery({ queryKey: ['orders', 'requests'], queryFn: () => api<Order[]>('/orders/requests') });
 
 export const useOrder = (id: number) =>
   useQuery({ queryKey: keys.order(id), queryFn: () => api<Order>(`/orders/${id}`) });
@@ -125,3 +140,14 @@ export function useDeleteHoliday() {
 // The holiday covering a date, if any. 'YYYY-MM-DD' strings compare correctly as text.
 export const holidayOn = (holidays: Holiday[] | undefined, date: string) =>
   holidays?.find((h) => h.startDate <= date && date <= h.endDate);
+
+export const useSettings = () =>
+  useQuery({ queryKey: keys.settings, queryFn: () => api<KitchenSettings>('/settings') });
+
+export function useUpdateSettings() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: KitchenSettings) => api<KitchenSettings>('/settings', json('PATCH', body)),
+    onSuccess: (settings) => qc.setQueryData(keys.settings, settings),
+  });
+}

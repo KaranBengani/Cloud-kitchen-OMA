@@ -1,4 +1,3 @@
-import { Type } from 'class-transformer';
 import {
   ArrayMaxSize,
   ArrayMinSize,
@@ -6,6 +5,7 @@ import {
   IsIn,
   IsInt,
   IsNumber,
+  IsObject,
   IsOptional,
   IsPositive,
   IsString,
@@ -17,6 +17,9 @@ import {
   ValidateIf,
   ValidateNested,
 } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+import { normalizePhone } from '../customers/customer.dto.js';
+import { ADDRESS_LABELS, type AddressLabel } from '../customers/customer-address.entity.js';
 import { MENU_UNITS, type MenuUnit } from '../menu/menu-item.entity.js';
 import { FULFILMENTS, type Fulfilment, ORDER_STATUSES, type OrderStatus } from './order.entity.js';
 import { PAYMENT_MODES, type PaymentMode } from './payment.entity.js';
@@ -97,6 +100,12 @@ export class OrderInput {
   @IsString()
   address?: string | null;
 
+  // Label for a parcel address that isn't in the customer's address book yet. Defaults to Home for
+  // their first address, Other after that.
+  @IsOptional()
+  @IsIn(ADDRESS_LABELS)
+  addressLabel?: AddressLabel;
+
   @IsOptional()
   @IsString()
   notes?: string | null;
@@ -129,9 +138,86 @@ export class UpdateOrderDto extends OrderInput {
 }
 
 export class UpdateStatusDto {
-  @IsIn(ORDER_STATUSES)
-  status: OrderStatus;
+  // 'requested' is only ever set by the web order form.
+  @IsIn(ORDER_STATUSES.filter((st) => st !== 'requested'))
+  status: Exclude<OrderStatus, 'requested'>;
 
   @IsInt()
   version: number;
+}
+
+// ---- Web order form (DECISIONS.md D19). Public, so every field is bounded. ----
+
+export class WebAddressInput {
+  @IsString()
+  @Length(5, 500)
+  address: string;
+
+  @IsIn(ADDRESS_LABELS)
+  label: AddressLabel;
+
+  @IsOptional()
+  @IsString()
+  @Length(0, 120)
+  recipientName?: string | null;
+
+  @IsOptional()
+  @Transform(({ value }) => normalizePhone(value))
+  @Matches(/^91[6-9]\d{9}$/, {
+    message: 'recipientPhone must be a 10-digit Indian mobile number',
+  })
+  recipientPhone?: string | null;
+}
+
+export class WebOrderItemInput {
+  @IsInt()
+  menuItemId: number;
+
+  @IsNumber({ maxDecimalPlaces: 3 })
+  @IsPositive()
+  @Max(1_000)
+  qty: number;
+}
+
+export class WebOrderDto {
+  @IsString()
+  @Length(1, 120)
+  name: string;
+
+  @Transform(({ value }) => normalizePhone(value))
+  @Matches(/^91[6-9]\d{9}$/, { message: 'Enter a 10-digit mobile number' })
+  phone: string;
+
+  @IsIn(FULFILMENTS)
+  fulfilment: Fulfilment;
+
+  // Required for delivery, ignored for pickup.
+  @ValidateIf((o: WebOrderDto) => o.fulfilment === 'parcel')
+  @IsObject({ message: 'address is required for delivery' })
+  @ValidateNested()
+  @Type(() => WebAddressInput)
+  address?: WebAddressInput;
+
+  @Matches(DATE, { message: 'deliveryDate must be YYYY-MM-DD' })
+  deliveryDate: string;
+
+  @IsOptional()
+  @Matches(TIME, { message: 'deliveryTime must be HH:MM' })
+  deliveryTime?: string | null;
+
+  @IsOptional()
+  @IsString()
+  @Length(0, 500)
+  notes?: string | null;
+
+  @ValidateNested({ each: true })
+  @Type(() => WebOrderItemInput)
+  @ArrayMinSize(1)
+  @ArrayMaxSize(40)
+  items: WebOrderItemInput[];
+
+  // Honeypot: hidden from people by CSS, so only bots fill it in.
+  @IsOptional()
+  @IsString()
+  website?: string;
 }
