@@ -28,12 +28,14 @@ services:
   # "Mummy's Kitchen (Test)" app so testing never touches real orders.
   # Not kept awake (no keep-alive ping), so it sleeps when idle and barely uses free hours;
   # the first request after a sleep takes about a minute.
+  # Deploys from the `staging` branch: feature PRs merge there first and are tested in the Test app,
+  # then `staging` merges into `main` for production (DECISIONS.md D20).
   - type: web
     name: oma-api-stg
     runtime: node
     plan: free
     region: singapore
-    branch: main
+    branch: staging
     rootDir: .
     buildCommand: npm ci -w api --include=dev && npm run build -w api
     startCommand: npm run migration:run -w api && node apps/api/dist/main.js
