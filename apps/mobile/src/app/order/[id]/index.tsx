@@ -5,7 +5,7 @@ import { MODE_ICON, PaymentSheet } from '@/components/payment-sheet';
 import { Screen } from '@/components/screen';
 import { Badge, Button, Card, ErrorState, Icon, Skeleton, StatusBadge } from '@/components/ui';
 import { ApiError } from '@/lib/api';
-import { whatsappUrl } from '@/lib/bill';
+import { confirmationText, whatsappUrl } from '@/lib/bill';
 import { longDate, phone, quantity, rupees, shortDate, time12 } from '@/lib/format';
 import { useI18n } from '@/lib/i18n';
 import { useDeletePayment, useOrder, useSetOrderStatus } from '@/lib/queries';
@@ -24,7 +24,11 @@ export default function OrderDetailScreen() {
   const order = useOrder(Number(id));
 
   return (
-    <Screen title={t('order.title', { id })} back right={order.data ? <StatusBadge status={order.data.status} /> : null}>
+    <Screen
+      title={t('order.title', { id })}
+      back
+      right={order.data ? <StatusBadge status={order.data.status} /> : null}
+    >
       {order.isPending ? <Skeleton count={2} /> : null}
       {order.isError ? <ErrorState error={order.error} onRetry={() => order.refetch()} /> : null}
       {order.data ? <OrderDetail order={order.data} onReload={() => order.refetch()} /> : null}
@@ -40,9 +44,20 @@ function OrderDetail({ order, onReload }: { order: Order; onReload: () => void }
   const [paying, setPaying] = useState(false);
   const next = NEXT[order.status];
 
+  // Opens the customer's WhatsApp chat with the confirmation typed in; the parent just taps send.
+  const sendConfirmation = (accepted: Order) =>
+    Linking.openURL(whatsappUrl(confirmationText(accepted), accepted.customer.phone));
+
   const changeStatus = async (status: OrderStatus) => {
     try {
-      await setStatus.mutateAsync({ id: order.id, status, version: order.version });
+      const saved = await setStatus.mutateAsync({ id: order.id, status, version: order.version });
+      // Web customers are waiting to hear back, so accepting offers the confirmation message straight away.
+      if (order.status === 'requested' && status === 'booked' && saved.customer.phone) {
+        Alert.alert(t('order.acceptedSend', { name: saved.customer.name }), undefined, [
+          { text: t('order.later'), style: 'cancel' },
+          { text: t('order.sendConfirmation'), onPress: () => sendConfirmation(saved) },
+        ]);
+      }
     } catch (e) {
       // 409: another phone changed this order since we loaded it (D6). Show the banner instead of guessing.
       if (e instanceof ApiError && e.status === 409) setConflict(true);
@@ -64,16 +79,16 @@ function OrderDetail({ order, onReload }: { order: Order; onReload: () => void }
         : order.status === 'declined'
           ? { text: t('common.cancel'), style: 'cancel' }
           : order.status === 'cancelled'
-        ? { text: t('order.reopen'), onPress: () => changeStatus('booked') }
-        : {
-            text: t('order.cancel'),
-            style: 'destructive',
-            onPress: () =>
-              Alert.alert(t('order.cancelConfirm', { id: order.id }), undefined, [
-                { text: t('common.no'), style: 'cancel' },
-                { text: t('common.yes'), style: 'destructive', onPress: () => changeStatus('cancelled') },
-              ]),
-          },
+            ? { text: t('order.reopen'), onPress: () => changeStatus('booked') }
+            : {
+                text: t('order.cancel'),
+                style: 'destructive',
+                onPress: () =>
+                  Alert.alert(t('order.cancelConfirm', { id: order.id }), undefined, [
+                    { text: t('common.no'), style: 'cancel' },
+                    { text: t('common.yes'), style: 'destructive', onPress: () => changeStatus('cancelled') },
+                  ]),
+              },
       { text: t('common.cancel'), style: 'cancel' },
     ]);
 
@@ -161,6 +176,16 @@ function OrderDetail({ order, onReload }: { order: Order; onReload: () => void }
             icon="checkmark-circle-outline"
             onPress={() => changeStatus(next.status)}
             loading={setStatus.isPending}
+          />
+        ) : null}
+
+        {/* Also here, for when "Later" was tapped after accepting. */}
+        {order.source === 'web' && order.status === 'booked' && customerPhone ? (
+          <Button
+            label={t('order.sendConfirmation')}
+            icon="logo-whatsapp"
+            variant="whatsapp"
+            onPress={() => sendConfirmation(order)}
           />
         ) : null}
 
@@ -333,7 +358,13 @@ const styles = StyleSheet.create({
   line: { flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingVertical: space.xs },
   rateRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6 },
   struck: { fontSize: font.label, color: colors.muted, textDecorationLine: 'line-through' },
-  totals: { backgroundColor: colors.tint, borderRadius: radius.md, padding: space.md, gap: space.xs, marginTop: space.sm },
+  totals: {
+    backgroundColor: colors.tint,
+    borderRadius: radius.md,
+    padding: space.md,
+    gap: space.xs,
+    marginTop: space.sm,
+  },
   totalRow: { flexDirection: 'row', justifyContent: 'space-between' },
   discount: { color: colors.success, fontWeight: '700' },
   totalLabel: { fontFamily: serif, fontSize: font.title, fontWeight: '700', color: colors.text },

@@ -3,6 +3,7 @@ import { Controller, Get, Header, NotFoundException, Param, Req, StreamableFile 
 import type { Request } from 'express';
 import { Public } from '../auth/public.decorator.js';
 import { HolidaysService } from '../holidays/holidays.service.js';
+import { SettingsService } from '../settings/settings.service.js';
 import { MenuService } from './menu.service.js';
 import { renderMenuPage } from './menu-page.js';
 
@@ -24,6 +25,7 @@ export class PublicMenuController {
   constructor(
     private readonly menu: MenuService,
     private readonly holidays: HolidaysService,
+    private readonly settings: SettingsService,
   ) {}
 
   @Get()
@@ -31,11 +33,15 @@ export class PublicMenuController {
   // A minute of caching: a price change shows up quickly, and repeat visits skip the database.
   @Header('Cache-Control', 'public, max-age=60')
   async page(@Req() req: Request): Promise<string> {
-    // Both come from memory after the first visit: browsing customers don't wake the database.
-    const [items, holidays] = await Promise.all([this.menu.publicMenu(), this.holidays.upcoming()]);
+    // All three come from memory after the first visit: browsing customers don't wake the database.
+    const [items, holidays, settings] = await Promise.all([
+      this.menu.publicMenu(),
+      this.holidays.upcoming(),
+      this.settings.get(),
+    ]);
     // Render terminates HTTPS in front of the app, so the original scheme is in X-Forwarded-Proto.
     const proto = req.get('x-forwarded-proto')?.split(',')[0] ?? req.protocol;
-    return renderMenuPage(items, `${proto}://${req.get('host')}`, holidays);
+    return renderMenuPage(items, `${proto}://${req.get('host')}`, holidays, settings.onlineOrdering);
   }
 
   @Get(':file')

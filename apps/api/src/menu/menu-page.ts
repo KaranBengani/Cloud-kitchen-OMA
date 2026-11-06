@@ -6,14 +6,17 @@ import type { MenuItem } from './menu-item.entity.js';
 // Rendered on the server so it needs no JavaScript and WhatsApp's link preview can read the <meta> tags.
 // Fonts and colours are the ones the Canva PDF uses (Berkshire Swash, Lato); images are cut from it.
 
-export type MenuPageItem = Pick<MenuItem, 'id' | 'name' | 'category' | 'unit' | 'pricePaise' | 'minQty' | 'description'>;
+export type MenuPageItem = Pick<
+  MenuItem,
+  'id' | 'name' | 'category' | 'unit' | 'pricePaise' | 'minQty' | 'description'
+>;
 export type MenuPageHoliday = Pick<KitchenHoliday, 'startDate' | 'endDate' | 'note'>;
 
 // As printed on the Canva menu. The first number gets the "Order on WhatsApp" button.
 const PHONES = ['+91 9830460199', '+91 9123086730'];
 const ORDER_TEXT = "Hi, I'd like to order from Mummy's Kitchen";
 // Images and order.js are cached for a day; bump this when one changes so phones fetch the new file.
-const ASSET_VERSION = 3;
+const ASSET_VERSION = 4;
 
 const UNIT_WORDS: Record<string, [string, string]> = {
   pc: ['piece', 'pieces'],
@@ -86,9 +89,7 @@ export function groupMenu(items: MenuPageItem[]): Section[] {
     if (!section) sections.push((section = { category: item.category, runs: [] }));
     const last = section.runs.at(-1);
     const sameMin =
-      last &&
-      last.min === item.minQty &&
-      (last.min === null || (last.items[0].unit === 'kg') === (item.unit === 'kg'));
+      last && last.min === item.minQty && (last.min === null || (last.items[0].unit === 'kg') === (item.unit === 'kg'));
     if (sameMin) last.items.push(item);
     else section.runs.push({ min: item.minQty, items: [item] });
   }
@@ -99,7 +100,12 @@ function renderSection({ category, runs }: Section): string {
   const body = runs
     .map(({ min, items }) => {
       const heading =
-        min === null ? '' : `<div class="min">Minimum Quantity ${minLabel(min, items.map((i) => i.unit))}</div>`;
+        min === null
+          ? ''
+          : `<div class="min">Minimum Quantity ${minLabel(
+              min,
+              items.map((i) => i.unit),
+            )}</div>`;
       const rows = items
         .map(
           (i) =>
@@ -120,6 +126,8 @@ export function renderMenuPage(
   items: MenuPageItem[],
   origin: string,
   holidays: MenuPageHoliday[] = [],
+  // The Settings → Online orders switch (D20). Off: no cart or order form, only the WhatsApp button.
+  ordering = false,
   today = todayIST(),
 ): string {
   const sections = groupMenu(items).map(renderSection).join('\n');
@@ -127,7 +135,7 @@ export function renderMenuPage(
     .map((line) => `<p class="closed">${escapeHtml(line)}</p>`)
     .join('');
   const orderUrl = `https://wa.me/${PHONES[0].replace(/\D/g, '')}?text=${encodeURIComponent(ORDER_TEXT)}`;
-  const description = 'Homemade namkeen, snacks & chaats, thalis and desserts. Order online or on WhatsApp.';
+  const description = `Homemade namkeen, snacks & chaats, thalis and desserts. Order ${ordering ? 'online or ' : ''}on WhatsApp.`;
   // What order.js needs. "<" is escaped so menu text can never close the <script> tag early.
   const data = JSON.stringify({
     items: items.map(({ id, name, unit, pricePaise, minQty }) => ({ id, name, unit, pricePaise, minQty })),
@@ -135,7 +143,6 @@ export function renderMenuPage(
     today,
     maxDate: addDays(today, 60),
     phones: PHONES,
-    whatsapp: PHONES[0].replace(/\D/g, ''),
   }).replace(/</g, '\\u003c');
 
   return `<!doctype html>
@@ -178,15 +185,20 @@ ${sections}
   <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="${WHATSAPP_ICON}"/></svg>
   Order on WhatsApp
 </a>
-<div class="cart-bar" id="cart-bar" hidden>
+${ordering ? orderingHtml(data) : ''}
+</body>
+</html>`;
+}
+
+// Cart bar, order form and the script that runs them; left out entirely while ordering is switched off.
+function orderingHtml(data: string): string {
+  return `<div class="cart-bar" id="cart-bar" hidden>
   <span id="cart-summary"></span>
   <button type="button" id="cart-continue">Continue</button>
 </div>
 ${CHECKOUT}
 <script type="application/json" id="menu-data">${data}</script>
-<script src="/menu/order.js?v=${ASSET_VERSION}" defer></script>
-</body>
-</html>`;
+<script src="/menu/order.js?v=${ASSET_VERSION}" defer></script>`;
 }
 
 // The order form (DECISIONS.md D19), a full-screen panel opened from the cart bar. order.js fills it in.
@@ -254,7 +266,6 @@ const CHECKOUT = `
     <div class="done" id="done" hidden>
       <h2>Order request sent <span id="done-id"></span></h2>
       <p>Thank you! Mummy’s Kitchen will confirm it on WhatsApp or a call. Nothing is final until then.</p>
-      <a class="submit whatsapp" id="done-whatsapp" href="#" target="_blank" rel="noopener">Send order details on WhatsApp</a>
       <button type="button" class="back" id="done-close">Back to menu</button>
     </div>
   </div>
@@ -365,7 +376,6 @@ const STYLES = `
   .trap { position: absolute; left: -9999px; }
   .submit { display: block; text-align: center; text-decoration: none; font: 900 1.15rem var(--sans); padding: 16px; border: 0; border-radius: 999px; background: var(--ink); color: var(--paper); cursor: pointer; }
   .submit:disabled { opacity: 0.6; }
-  .submit.whatsapp { background: var(--whatsapp); color: #fff; }
   .done, .review { display: grid; gap: 14px; }
   .row { align-items: end; }
   .done p { margin: 0; font-weight: 400; }

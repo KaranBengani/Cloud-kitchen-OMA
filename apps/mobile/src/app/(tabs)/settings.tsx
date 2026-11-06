@@ -2,11 +2,12 @@ import Constants from 'expo-constants';
 import { router } from 'expo-router';
 import * as Updates from 'expo-updates';
 import { useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import { Screen } from '@/components/screen';
 import { Icon, type IconName } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { type Language, useI18n } from '@/lib/i18n';
+import { useSettings, useUpdateSettings } from '@/lib/queries';
 import { colors, font, radius, serif, space } from '@/lib/theme';
 
 const LANGUAGES: { value: Language; label: string; sub: string }[] = [
@@ -65,6 +66,7 @@ export default function SettingsScreen() {
         })}
       </View>
 
+      <OnlineOrderingRow />
       <Row icon="calendar-outline" label={t('settings.holidays')} onPress={() => router.push('/holidays')} />
       <Row icon="cloud-download-outline" label={t('settings.update')} onPress={checkForUpdate} busy={checking} />
       <Row icon="log-out-outline" label={t('settings.logout')} onPress={confirmLogout} danger />
@@ -75,6 +77,39 @@ export default function SettingsScreen() {
         {Updates.updateId?.slice(0, 8) ?? 'dev'}
       </Text>
     </Screen>
+  );
+}
+
+// The online ordering switch (D20). Takes effect on the menu link within a minute (the page is cached that long).
+function OnlineOrderingRow() {
+  const { t } = useI18n();
+  const settings = useSettings();
+  const update = useUpdateSettings();
+  const on = update.isPending ? update.variables.onlineOrdering : (settings.data?.onlineOrdering ?? false);
+
+  return (
+    <View style={styles.row}>
+      <View style={styles.rowIcon}>
+        <Icon name="globe-outline" color={colors.primary} />
+      </View>
+      <View style={styles.flex}>
+        <Text style={styles.rowText}>{t('settings.onlineOrdering')}</Text>
+        <Text style={styles.rowSub}>{t(on ? 'settings.onlineOrderingOn' : 'settings.onlineOrderingOff')}</Text>
+      </View>
+      {settings.isPending ? (
+        <ActivityIndicator color={colors.primary} />
+      ) : (
+        <Switch
+          value={on}
+          disabled={settings.isError || update.isPending}
+          onValueChange={(value) =>
+            update.mutate({ onlineOrdering: value }, { onError: () => Alert.alert(t('common.error')) })
+          }
+          trackColor={{ true: colors.primary }}
+          accessibilityLabel={t('settings.onlineOrdering')}
+        />
+      )}
+    </View>
   );
 }
 
@@ -139,6 +174,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   rowIconDanger: { backgroundColor: colors.dangerSoft },
-  rowText: { flex: 1, fontSize: font.body, fontWeight: '700' },
-  version: { marginTop: 'auto', marginBottom: space.md, color: colors.muted, fontSize: font.small, textAlign: 'center' },
+  rowText: { flex: 1, fontSize: font.body, fontWeight: '700', color: colors.text },
+  rowSub: { fontSize: font.small, color: colors.muted },
+  flex: { flex: 1 },
+  version: {
+    marginTop: 'auto',
+    marginBottom: space.md,
+    color: colors.muted,
+    fontSize: font.small,
+    textAlign: 'center',
+  },
 });

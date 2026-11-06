@@ -43,7 +43,10 @@ Native changes later would need a reinstall, which can't happen in person again 
 - [x] Customer addresses with labels, shared by the app and the web (D19)
 - [x] Web order form on the menu link; orders arrive as requests (D19)
 - [x] App: accept / decline requests, badge on Orders (D19)
-- [ ] Test on staging, then share the ordering link with customers
+- [x] Online orders switch in Settings, starts off (D20)
+- [x] "Send confirmation" on WhatsApp after accepting (D20)
+- [ ] Push notification on new web orders, app 1.1.0 (D20)
+- [ ] Test on staging, then turn on online orders and share the link
 
 ## Phase 2: learn the codebase (Karan, with Claude, alongside Phase 1 week 2)
 For each module: Claude walks through it, Karan explains it back, answers interview questions, then rewrites

@@ -126,3 +126,8 @@ export interface Holiday {
   endDate: string;
   note: string | null;
 }
+
+// Kitchen-wide switches (D20), Settings screen.
+export interface KitchenSettings {
+  onlineOrdering: boolean;
+}

@@ -14,16 +14,6 @@
   const qtyLabel = (qty, unit) => (FRACTIONS[qty] ?? String(qty)) + ' ' + unit;
   const step = (item) => (item.unit === 'kg' ? 0.25 : 1);
   const lineTotal = (item, qty) => Math.round(item.pricePaise * qty);
-  const dayLabel = (iso) => {
-    const [y, m, d] = iso.split('-').map(Number);
-    return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString('en-IN', {
-      weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC',
-    });
-  };
-  const time12 = (hhmm) => {
-    const [h, m] = hhmm.split(':').map(Number);
-    return ((h + 11) % 12) + 1 + ':' + String(m).padStart(2, '0') + (h < 12 ? ' AM' : ' PM');
-  };
   const holidayOn = (date) => data.holidays.find((h) => h.startDate <= date && date <= h.endDate);
 
   // ---- Steppers on each menu item ----
@@ -215,7 +205,7 @@
       } catch {
         // Not remembered; that's fine.
       }
-      showDone(result.orderId, body);
+      showDone(result.orderId);
     } catch {
       $('form-error').textContent = 'No internet connection. Please check it and try again.';
     } finally {
@@ -224,24 +214,9 @@
     }
   });
 
-  // The confirmation offers a WhatsApp message with the whole order, which is how the kitchen hears
-  // about it straight away (the app has no notifications).
-  function showDone(orderId, body) {
-    const lines = [...cart].map(([id, qty]) => '• ' + items.get(id).name + ' · ' + qtyLabel(qty, items.get(id).unit));
-    const when = dayLabel(body.deliveryDate) + (body.deliveryTime ? ', ' + time12(body.deliveryTime) : '');
-    const text = [
-      'Hi Mummy’s Kitchen, I placed order request #' + orderId + ':',
-      ...lines,
-      'For: ' + when,
-      body.fulfilment === 'parcel' ? 'Delivery to: ' + body.address.address : 'Pickup',
-      body.notes ? 'Notes: ' + body.notes : null,
-      'Name: ' + body.name,
-      'Estimated total: ' + rupees(cartTotal()),
-    ]
-      .filter(Boolean)
-      .join('\n');
+  // The kitchen gets a push notification on the family's phones and confirms from the app (D20).
+  function showDone(orderId) {
     $('done-id').textContent = '#' + orderId;
-    $('done-whatsapp').href = 'https://wa.me/' + data.whatsapp + '?text=' + encodeURIComponent(text);
     form.hidden = true;
     $('review').hidden = true;
     $('done').hidden = false;

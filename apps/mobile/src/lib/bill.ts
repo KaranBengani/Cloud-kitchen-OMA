@@ -37,6 +37,25 @@ export function billText(order: Order): string {
   return parts.join('\n');
 }
 
+// Sent after accepting an order, mostly web requests (D20). Always English: it goes to customers.
+export function confirmationText(order: Order): string {
+  const when = `${shortDate(order.deliveryDate)}${order.deliveryTime ? `, ${time12(order.deliveryTime)}` : ''}`;
+  return [
+    `Namaste ${order.customer.name} 🙏`,
+    `Your order #${order.id} with Mummy's Kitchen is *confirmed*.`,
+    '',
+    `📅 ${when}`,
+    order.fulfilment === 'parcel' && order.address ? `🛵 Delivery to: ${order.address}` : '🏠 Pickup from the kitchen',
+    '',
+    ...order.items.map((item) => `• ${item.name} · ${quantity(item.qty, item.unit)}`),
+    '',
+    `*Total: ${rupees(order.totalPaise)}*`,
+    ...(order.notes ? [`_Note: ${order.notes}_`] : []),
+    '',
+    'Thank you for ordering! 🙏',
+  ].join('\n');
+}
+
 // wa.me opens the customer's chat directly with the bill typed in; the user just taps send.
 // Falls back to WhatsApp's contact picker when the customer has no number.
 export function whatsappUrl(text: string, phone?: string | null): string {
