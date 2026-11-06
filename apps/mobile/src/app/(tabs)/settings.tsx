@@ -93,7 +93,7 @@ function OnlineOrderingRow() {
         <Icon name="globe-outline" color={colors.primary} />
       </View>
       <View style={styles.flex}>
-        <Text style={styles.rowText}>{t('settings.onlineOrdering')}</Text>
+        <Text style={styles.rowTitle}>{t('settings.onlineOrdering')}</Text>
         <Text style={styles.rowSub}>{t(on ? 'settings.onlineOrderingOn' : 'settings.onlineOrderingOff')}</Text>
       </View>
       {settings.isPending ? (
@@ -105,7 +105,8 @@ function OnlineOrderingRow() {
           onValueChange={(value) =>
             update.mutate({ onlineOrdering: value }, { onError: () => Alert.alert(t('common.error')) })
           }
-          trackColor={{ true: colors.primary }}
+          trackColor={{ true: colors.primary, false: colors.border }}
+          thumbColor={on ? colors.surface : colors.muted}
           accessibilityLabel={t('settings.onlineOrdering')}
         />
       )}
@@ -159,6 +160,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: space.md,
     minHeight: 72,
+    paddingVertical: space.sm,
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
     paddingHorizontal: space.md,
@@ -175,6 +177,8 @@ const styles = StyleSheet.create({
   },
   rowIconDanger: { backgroundColor: colors.dangerSoft },
   rowText: { flex: 1, fontSize: font.body, fontWeight: '700', color: colors.text },
+  // No flex: 1 here: inside a column it squashed the title under the wrapped subtitle.
+  rowTitle: { fontSize: font.body, fontWeight: '700', color: colors.text },
   rowSub: { fontSize: font.small, color: colors.muted },
   flex: { flex: 1 },
   version: {

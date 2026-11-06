@@ -126,7 +126,7 @@ function OrderDetail({ order, onReload }: { order: Order; onReload: () => void }
         <Card style={styles.tinted}>
           <View style={styles.row}>
             <Icon name="calendar-outline" color={colors.primary} />
-            <Text style={styles.strong}>
+            <Text style={[styles.strong, styles.flex]}>
               {longDate(order.deliveryDate, locale)}
               {order.deliveryTime ? ` · ${time12(order.deliveryTime)}` : ''}
             </Text>
@@ -154,10 +154,11 @@ function OrderDetail({ order, onReload }: { order: Order; onReload: () => void }
             <View style={styles.row}>
               <Button
                 label={t('order.decline')}
+                icon="close-circle-outline"
                 variant="danger"
                 onPress={decline}
                 disabled={setStatus.isPending}
-                style={styles.flex}
+                style={[styles.flex, styles.declineButton]}
               />
               <Button
                 label={t('order.accept')}
@@ -334,6 +335,8 @@ function OrderDetail({ order, onReload }: { order: Order; onReload: () => void }
 
 const styles = StyleSheet.create({
   request: { gap: space.sm, padding: space.md, borderRadius: radius.lg, backgroundColor: colors.dangerSoft },
+  // White with a red edge: the default danger fill is the same pink as this card.
+  declineButton: { backgroundColor: colors.surface, borderWidth: 1.5, borderColor: colors.danger },
   requestTitle: { fontFamily: serif, fontSize: font.title, fontWeight: '700', color: colors.danger },
   flex: { flex: 1 },
   content: { gap: space.md, paddingBottom: space.xl },
