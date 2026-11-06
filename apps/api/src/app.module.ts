@@ -12,6 +12,7 @@ import { HealthController } from './health/health.controller.js';
 import { HolidaysModule } from './holidays/holidays.module.js';
 import { MenuModule } from './menu/menu.module.js';
 import { OrdersModule } from './orders/orders.module.js';
+import { PushModule } from './push/push.module.js';
 import { SettingsModule } from './settings/settings.module.js';
 
 @Module({
@@ -29,6 +30,7 @@ import { SettingsModule } from './settings/settings.module.js';
     OrdersModule,
     HolidaysModule,
     SettingsModule,
+    PushModule,
   ],
   controllers: [HealthController],
   providers: [{ provide: APP_GUARD, useClass: ClientIpThrottlerGuard }],

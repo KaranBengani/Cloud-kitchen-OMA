@@ -6,8 +6,16 @@ import type { ConfigContext, ExpoConfig } from 'expo/config';
 // API and database, so testing never touches real orders.
 const STAGING = process.env.APP_VARIANT === 'staging';
 
-export default ({ config }: ConfigContext): ExpoConfig => {
-  if (!STAGING) return config as ExpoConfig;
+// Firebase's Android config, needed for push notifications (DECISIONS.md D20). An EAS "file" environment
+// variable, so it stays out of git; one file covers both package ids. Local dev builds work without it,
+// they just get no push token.
+const GOOGLE_SERVICES_JSON = process.env.GOOGLE_SERVICES_JSON;
+
+export default ({ config: appJson }: ConfigContext): ExpoConfig => {
+  const config: ExpoConfig = GOOGLE_SERVICES_JSON
+    ? { ...(appJson as ExpoConfig), android: { ...appJson.android, googleServicesFile: GOOGLE_SERVICES_JSON } }
+    : (appJson as ExpoConfig);
+  if (!STAGING) return config;
   return {
     ...config,
     name: "Mummy's Kitchen (Test)",

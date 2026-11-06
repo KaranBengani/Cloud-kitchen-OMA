@@ -1,6 +1,7 @@
 import * as SecureStore from 'expo-secure-store';
 import { createContext, type ReactNode, use, useEffect, useState } from 'react';
 import { api, setAuth } from './api';
+import { unregisterPushToken } from './notifications';
 
 // The token lives in SecureStore (Android Keystore-backed), not AsyncStorage, because it grants
 // full access to the family's orders and customer details. In React web you'd use an httpOnly
@@ -20,6 +21,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   const logout = () => {
+    // Needs the auth token, so it goes first.
+    unregisterPushToken();
     setToken(null);
     setAuth(null);
     SecureStore.deleteItemAsync(TOKEN_KEY);
@@ -45,9 +48,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(newToken);
   };
 
-  return (
-    <AuthContext value={{ isLoading, isLoggedIn: token !== null, login, logout }}>{children}</AuthContext>
-  );
+  return <AuthContext value={{ isLoading, isLoggedIn: token !== null, login, logout }}>{children}</AuthContext>;
 }
 
 export function useAuth(): Auth {

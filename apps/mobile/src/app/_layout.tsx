@@ -7,6 +7,7 @@ import { AppState } from 'react-native';
 import { wakeServer } from '@/lib/api';
 import { AuthProvider, useAuth } from '@/lib/auth';
 import { I18nProvider } from '@/lib/i18n';
+import { usePushNotifications } from '@/lib/notifications';
 import { colors } from '@/lib/theme';
 
 SplashScreen.preventAutoHideAsync();
@@ -40,6 +41,7 @@ export default function RootLayout() {
 // This is UX only; the API's AuthGuard is what actually protects the data.
 function RootNavigator() {
   const { isLoading, isLoggedIn } = useAuth();
+  usePushNotifications(isLoggedIn);
 
   useEffect(() => {
     wakeServer();
