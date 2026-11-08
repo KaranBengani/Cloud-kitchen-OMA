@@ -1,16 +1,45 @@
 # Render's free web service sleeps after 15 minutes idle, and the first request then takes
 # ~1 minute. Pinging every 10 minutes during kitchen hours (07:00–23:00 IST) keeps it awake
 # when the family uses it, and stays inside the free 750 instance-hours a month.
-# GitHub's schedule is best-effort (on 3 Nov it ran once in 13 hours), so this is only a backup
-# to the external pinger on cron-job.org; minutes are offset from :00, when GitHub drops the most runs.
+# The cron-job.org pinger does the regular pings. This workflow is the self-heal: twice (4 and 8 Nov)
+# Render failed to wake the sleeping service and it stayed down for hours until a manual redeploy.
+# So when two pings in a row fail, this calls Render's deploy hook, the same as Manual Deploy.
+# cron-job.org triggers it through workflow_dispatch ("Kitchen-OMA-healer"), because GitHub's own
+# schedule is best-effort (on 8 Nov it ran twice in 16 hours); the schedule stays only as a backup.
 name: keep-alive
 on:
   schedule:
     - cron: '3-59/10 1-17 * * *' # UTC; 01:30–17:30 UTC is 07:00–23:00 IST
   workflow_dispatch:
+concurrency:
+  group: keep-alive
+  cancel-in-progress: false
 jobs:
   ping:
     runs-on: ubuntu-latest
     if: vars.API_URL != ''
     steps:
-      - run: curl --fail --silent --show-error --max-time 90 "${{ vars.API_URL }}/health/live"
+      - name: Ping, and redeploy if the service won't wake
+        env:
+          URL: ${{ vars.API_URL }}/health/live
+          DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+        run: |
+          ping() { curl --fail --silent --show-error --max-time 90 "$URL"; }
+          # A healthy cold start answers within ~60s, so a single slow or failed ping isn't enough.
+          ping && exit 0
+          sleep 30
+          ping && exit 0
+          if [ -z "$DEPLOY_HOOK" ]; then
+            echo "::error::Service down and no RENDER_DEPLOY_HOOK secret set"
+            exit 1
+          fi
+          echo "Service down after two pings; triggering a Render redeploy"
+          curl --fail --silent --show-error -X POST "$DEPLOY_HOOK" > /dev/null
+          # A deploy takes ~2 minutes. Fail the run either way, so GitHub emails that it happened.
+          sleep 180
+          if ping; then
+            echo "::warning::Service was down; the redeploy brought it back"
+          else
+            echo "::error::Service still down after the redeploy"
+          fi
+          exit 1
