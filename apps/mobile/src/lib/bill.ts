@@ -63,6 +63,8 @@ export function declineText(order: Order): string {
     `Namaste ${order.customer.name} 🙏`,
     `Sorry, Mummy's Kitchen can't take your order #${order.id} for ${when}.`,
     '',
+    `In case of any further issues, reply here or call us on ${KITCHEN.phones.join(' / ')}.`,
+    '',
     'We hope to cook for you another time. Thank you for thinking of us! 🙏',
   ].join('\n');
 }
