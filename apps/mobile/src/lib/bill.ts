@@ -56,6 +56,17 @@ export function confirmationText(order: Order): string {
   ].join('\n');
 }
 
+// Sent after declining a web order request: the customer is waiting to hear back either way (D19).
+export function declineText(order: Order): string {
+  const when = `${shortDate(order.deliveryDate)}${order.deliveryTime ? `, ${time12(order.deliveryTime)}` : ''}`;
+  return [
+    `Namaste ${order.customer.name} 🙏`,
+    `Sorry, Mummy's Kitchen can't take your order #${order.id} for ${when}.`,
+    '',
+    'We hope to cook for you another time. Thank you for thinking of us! 🙏',
+  ].join('\n');
+}
+
 // wa.me opens the customer's chat directly with the bill typed in; the user just taps send.
 // Falls back to WhatsApp's contact picker when the customer has no number.
 export function whatsappUrl(text: string, phone?: string | null): string {

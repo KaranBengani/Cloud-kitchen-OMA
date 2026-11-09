@@ -139,7 +139,8 @@ the link don't wake the Neon database (compute is billed for time awake, not que
   phone, address text), deduplicated per customer. The app's customer list and New Order read the same rows.
 - **Web orders arrive as "requested"** and parents **accept** (→ booked) or **decline**. Parents hear about new
   requests by push notification and confirm to the customer from the app (D20); the customer's page no longer asks
-  them to send the order on WhatsApp.
+  them to send the order on WhatsApp. After Accept or Decline the app offers a ready-typed WhatsApp message (confirmation
+  or a polite decline), and the order screen keeps a button for it if they tapped "Later".
 - **Minimum quantities are not enforced** on the web: below-minimum orders are reviewed by parents like any request.
 - **Delivery time** is any time the customer picks (optional), not fixed slots. Same-day orders ask the customer to call first;
   off-menu items: place the order, then call. Delivery is by Rapido/Uber parcel, paid by the customer (D12).
