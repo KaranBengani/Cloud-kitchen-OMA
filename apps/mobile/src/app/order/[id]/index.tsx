@@ -5,7 +5,7 @@ import { MODE_ICON, PaymentSheet } from '@/components/payment-sheet';
 import { Screen } from '@/components/screen';
 import { Badge, Button, Card, ErrorState, Icon, Skeleton, StatusBadge } from '@/components/ui';
 import { ApiError } from '@/lib/api';
-import { confirmationText, whatsappUrl } from '@/lib/bill';
+import { confirmationText, declineText, whatsappUrl } from '@/lib/bill';
 import { longDate, phone, quantity, rupees, shortDate, time12 } from '@/lib/format';
 import { useI18n } from '@/lib/i18n';
 import { useDeletePayment, useOrder, useSetOrderStatus } from '@/lib/queries';
@@ -44,18 +44,25 @@ function OrderDetail({ order, onReload }: { order: Order; onReload: () => void }
   const [paying, setPaying] = useState(false);
   const next = NEXT[order.status];
 
-  // Opens the customer's WhatsApp chat with the confirmation typed in; the parent just taps send.
+  // Opens the customer's WhatsApp chat with the message typed in; the parent just taps send.
   const sendConfirmation = (accepted: Order) =>
     Linking.openURL(whatsappUrl(confirmationText(accepted), accepted.customer.phone));
+  const sendDecline = (declined: Order) => Linking.openURL(whatsappUrl(declineText(declined), declined.customer.phone));
 
   const changeStatus = async (status: OrderStatus) => {
     try {
       const saved = await setStatus.mutateAsync({ id: order.id, status, version: order.version });
-      // Web customers are waiting to hear back, so accepting offers the confirmation message straight away.
+      // Web customers are waiting to hear back, so accepting or declining offers the message straight away.
       if (order.status === 'requested' && status === 'booked' && saved.customer.phone) {
         Alert.alert(t('order.acceptedSend', { name: saved.customer.name }), undefined, [
           { text: t('order.later'), style: 'cancel' },
           { text: t('order.sendConfirmation'), onPress: () => sendConfirmation(saved) },
+        ]);
+      }
+      if (order.status === 'requested' && status === 'declined' && saved.customer.phone) {
+        Alert.alert(t('order.declinedSend', { name: saved.customer.name }), undefined, [
+          { text: t('order.later'), style: 'cancel' },
+          { text: t('order.sendDecline'), onPress: () => sendDecline(saved) },
         ]);
       }
     } catch (e) {
@@ -180,13 +187,21 @@ function OrderDetail({ order, onReload }: { order: Order; onReload: () => void }
           />
         ) : null}
 
-        {/* Also here, for when "Later" was tapped after accepting. */}
+        {/* Also here, for when "Later" was tapped after accepting or declining. */}
         {order.source === 'web' && order.status === 'booked' && customerPhone ? (
           <Button
             label={t('order.sendConfirmation')}
             icon="logo-whatsapp"
             variant="whatsapp"
             onPress={() => sendConfirmation(order)}
+          />
+        ) : null}
+        {order.source === 'web' && order.status === 'declined' && customerPhone ? (
+          <Button
+            label={t('order.sendDecline')}
+            icon="logo-whatsapp"
+            variant="whatsapp"
+            onPress={() => sendDecline(order)}
           />
         ) : null}
 

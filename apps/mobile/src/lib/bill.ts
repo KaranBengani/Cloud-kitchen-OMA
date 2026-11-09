@@ -37,22 +37,43 @@ export function billText(order: Order): string {
   return parts.join('\n');
 }
 
-// Sent after accepting an order, mostly web requests (D20). Always English: it goes to customers.
-export function confirmationText(order: Order): string {
+// Date, pickup or delivery, items and total: shared by the confirmation and decline messages.
+function orderSummary(order: Order): string[] {
   const when = `${shortDate(order.deliveryDate)}${order.deliveryTime ? `, ${time12(order.deliveryTime)}` : ''}`;
   return [
-    `Namaste ${order.customer.name} 🙏`,
-    `Your order #${order.id} with Mummy's Kitchen is *confirmed*.`,
-    '',
     `📅 ${when}`,
     order.fulfilment === 'parcel' && order.address ? `🛵 Delivery to: ${order.address}` : '🏠 Pickup from the kitchen',
     '',
     ...order.items.map((item) => `• ${item.name} · ${quantity(item.qty, item.unit)}`),
     '',
     `*Total: ${rupees(order.totalPaise)}*`,
+  ];
+}
+
+// Sent after accepting an order, mostly web requests (D20). Always English: it goes to customers.
+export function confirmationText(order: Order): string {
+  return [
+    `Namaste ${order.customer.name} 🙏`,
+    `Your order #${order.id} with Mummy's Kitchen is *confirmed*.`,
+    '',
+    ...orderSummary(order),
     ...(order.notes ? [`_Note: ${order.notes}_`] : []),
     '',
     'Thank you for ordering! 🙏',
+  ].join('\n');
+}
+
+// Sent after declining a web order request: the customer is waiting to hear back either way (D19).
+export function declineText(order: Order): string {
+  return [
+    `Namaste ${order.customer.name} 🙏`,
+    `Sorry, Mummy's Kitchen can't take your order #${order.id}.`,
+    '',
+    ...orderSummary(order),
+    '',
+    `In case of any further issues, reply here or call us on ${KITCHEN.phones.join(' / ')}.`,
+    '',
+    'We hope to cook for you another time. Thank you for thinking of us! 🙏',
   ].join('\n');
 }
 
