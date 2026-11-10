@@ -266,7 +266,7 @@ const CHECKOUT = `
     <div class="done" id="done" hidden>
       <h2>Order request sent <span id="done-id"></span></h2>
       <p>Thank you! Mummy’s Kitchen will confirm it on WhatsApp or a call. Nothing is final until then.</p>
-      <button type="button" class="back" id="done-close">Back to menu</button>
+      <button type="button" class="submit" id="done-close">Back to menu</button>
     </div>
   </div>
 </section>`;
