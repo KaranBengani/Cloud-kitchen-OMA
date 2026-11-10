@@ -78,6 +78,15 @@ describe('renderMenuPage', () => {
     expect(html).toContain('id="order-form"');
   });
 
+  it('shrinks WhatsApp to a small link at the end while online ordering is on', () => {
+    const on = renderMenuPage([item({})], 'https://example.com', [], true);
+    expect(on).toContain('class="order-small" id="whatsapp"');
+    expect(on).not.toContain('class="order" id="whatsapp"');
+    const off = renderMenuPage([item({})], 'https://example.com', [], false);
+    expect(off).toContain('class="order" id="whatsapp"');
+    expect(off).not.toContain('order-small" id');
+  });
+
   it('leaves out the cart and order form while online ordering is off', () => {
     const html = renderMenuPage([item({})], 'https://example.com', [], false);
     expect(html).not.toContain('/menu/order.js');

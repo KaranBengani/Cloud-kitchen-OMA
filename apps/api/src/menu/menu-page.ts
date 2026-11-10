@@ -180,14 +180,21 @@ ${sections}
     <div class="phones">${PHONES.map((p) => `<a href="tel:${p.replace(/\s/g, '')}">${p}</a>`).join('<br>')}</div>
     <small>*Both numbers are reachable via WhatsApp as well</small>
   </div>
+  ${ordering ? whatsappLink(orderUrl, 'order-small', 16, 'Or order on WhatsApp') : ''}
 </footer>
-<a class="order" id="whatsapp" href="${orderUrl}">
-  <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="${WHATSAPP_ICON}"/></svg>
-  Order on WhatsApp
-</a>
+${ordering ? '' : whatsappLink(orderUrl, 'order', 24, 'Order on WhatsApp')}
 ${ordering ? orderingHtml(data) : ''}
 </body>
 </html>`;
+}
+
+// While online ordering is on, WhatsApp is the last resort: a small link at the end of the page instead of the
+// sticky button. Both keep id="whatsapp", which order.js hides while the cart has items.
+function whatsappLink(url: string, cls: string, size: number, label: string): string {
+  return `<a class="${cls}" id="whatsapp" href="${url}">
+  <svg width="${size}" height="${size}" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="${WHATSAPP_ICON}"/></svg>
+  ${label}
+</a>`;
 }
 
 // Cart bar, order form and the script that runs them; left out entirely while ordering is switched off.
@@ -321,6 +328,11 @@ const STYLES = `
     box-shadow: 0 6px 18px rgba(60, 30, 5, 0.3); white-space: nowrap;
   }
   .order:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+  .order-small {
+    flex-basis: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    font: 700 0.85rem var(--sans); color: var(--ink); opacity: 0.75; text-decoration: underline;
+  }
+  .order-small svg { color: var(--whatsapp); }
   [hidden] { display: none !important; }
 
   /* Ordering (order.js). Buttons and form use Lato for legibility; the script face stays for the menu. */
