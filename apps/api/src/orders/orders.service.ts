@@ -111,8 +111,8 @@ export class OrdersService {
 
   // Order, items and advance are written in ONE transaction: either the whole order exists or none of it.
   // Spring equivalent: a @Transactional service method.
-  create(dto: CreateOrderDto): Promise<OrderView> {
-    return this.db.transaction(async (tx) => {
+  async create(dto: CreateOrderDto, fromPushToken?: string): Promise<OrderView> {
+    const created = await this.db.transaction(async (tx) => {
       await this.assertCustomer(tx, dto.customerId);
       const { lines, discountPaise, totalPaise } = await this.buildLines(tx, dto);
 
@@ -134,6 +134,19 @@ export class OrdersService {
 
       return this.get(order.id, tx);
     });
+
+    // After the commit, and not awaited, like web orders.
+    void this.push.newAppOrder(
+      {
+        orderId: created.id,
+        name: created.customer.name,
+        deliveryDate: created.deliveryDate,
+        itemCount: created.items.length,
+        totalPaise: created.totalPaise,
+      },
+      fromPushToken,
+    );
+    return created;
   }
 
   replace(id: number, dto: UpdateOrderDto): Promise<OrderView> {

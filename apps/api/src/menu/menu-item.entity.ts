@@ -25,6 +25,10 @@ export class MenuItem {
   @Column({ type: 'varchar', length: 120 })
   name: string;
 
+  // Shown in the app's Hindi mode; customers (bills, web menu) always see the English name.
+  @Column({ name: 'name_hi', type: 'varchar', length: 120, nullable: true })
+  nameHi: string | null;
+
   // Free text, not a table: there are 4 categories and parents may add one rarely.
   @Column({ type: 'varchar', length: 60 })
   category: string;

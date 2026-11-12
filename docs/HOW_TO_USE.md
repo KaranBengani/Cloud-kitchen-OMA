@@ -7,15 +7,20 @@ Short guide for installing the app and the everyday tasks. The family PIN is sha
 2. Open the downloaded file. Android asks to allow installing from this source: tap **Settings**, turn on
    **Allow from this source**, go back, tap **Install**.
 3. Open **Mummy's Kitchen** and enter the 6-digit family PIN. It stays logged in for about 6 months.
-4. Hindi: **Settings** tab → **हिंदी**. Each phone remembers its own language.
+4. Hindi: **Settings** tab → **हिंदी**. Each phone remembers its own language. Menu items show in Hindi too;
+   bills and WhatsApp messages to customers stay in English.
+5. When it asks, **Allow** notifications (new online orders ring with the kitchen chime) and, the first time you
+   pick from contacts, **Allow** contacts.
 
 The grey **Mummy's Kitchen (Test)** app is only for Karan's testing. Real orders always go in the coloured app.
 
 ## Every day
 | To do this | Tap |
 |---|---|
-| See upcoming orders | **Orders** tab. Tap a day at the top to jump to it; **Month** shows the calendar. |
+| See upcoming orders | **Orders** tab opens on the month calendar; tap a day to see its orders. **Week** shows a list. |
 | Take an order | The big **+** in the middle → pick or add the customer → add items → check everything → **Save order** |
+| Customer from the phone's contacts | In the customer step, **Pick from phone contacts**: fills name and number |
+| Hindi name of an item | **Menu** tab → pencil → **Name in Hindi** |
 | Something not on the menu | In the items step, **+ Custom item** (name, unit, price, quantity) |
 | Give a special price | In the last step, tap the item's price and type the new one |
 | Give a discount | In the last step, **+ Add discount** |
@@ -55,3 +60,6 @@ new APK, so phones still on the old one never get JavaScript that needs a module
   Account → FCM V1.
 - Each logged-in phone registers on app start; a web order sends "New order request #N" to all of them.
   A phone that logs out unregisters; one that uninstalls is removed the next time a notification fails.
+- Order chime (D21): `apps/mobile/assets/sounds/new_order.wav`, bundled by the expo-notifications plugin, on the
+  Android channel `new-orders`. Changing the sound needs a new file name **and** a new channel id (Android fixes a
+  channel's sound when it's created), plus a new APK.

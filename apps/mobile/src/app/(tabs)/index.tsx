@@ -25,14 +25,15 @@ type Mode = 'week' | 'month';
 
 export default function OrdersScreen() {
   const { t } = useI18n();
-  const [mode, setMode] = useState<Mode>('week');
+  // Month first: parents plan by the calendar (feedback, 12 Nov 2026).
+  const [mode, setMode] = useState<Mode>('month');
 
   return (
     <Screen
       title={t('tabs.orders')}
       right={
         <View style={styles.toggle}>
-          {(['week', 'month'] as const).map((m) => (
+          {(['month', 'week'] as const).map((m) => (
             <Pressable
               key={m}
               onPress={() => setMode(m)}
@@ -205,6 +206,8 @@ function MonthView() {
       refreshControl={<RefreshControl refreshing={orders.isRefetching} onRefresh={() => void orders.refetch()} />}
       ListHeaderComponent={
         <>
+          {/* Web requests need an answer whichever view is open. */}
+          <Requests />
           <View style={styles.monthHeader}>
             <Text style={styles.monthTitle}>{monthTitle(month, locale)}</Text>
             <Pressable onPress={() => changeMonth(-1)} style={styles.weekArrow} accessibilityLabel="Previous month">

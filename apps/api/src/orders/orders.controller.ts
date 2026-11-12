@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Put, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Headers, Param, ParseIntPipe, Patch, Post, Put, Query } from '@nestjs/common';
 import { CreateOrderDto, PaymentInput, UpdateOrderDto, UpdateStatusDto } from './order.dto.js';
 import { OrdersService } from './orders.service.js';
 
@@ -22,9 +22,10 @@ export class OrdersController {
     return this.orders.get(id);
   }
 
+  // X-Push-Token: the adding phone's push token, so it isn't alerted about its own order.
   @Post('orders')
-  create(@Body() dto: CreateOrderDto) {
-    return this.orders.create(dto);
+  create(@Body() dto: CreateOrderDto, @Headers('x-push-token') pushToken?: string) {
+    return this.orders.create(dto, pushToken);
   }
 
   @Put('orders/:id')

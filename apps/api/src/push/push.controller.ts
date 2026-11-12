@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, HttpCode, Post } from '@nestjs/common';
-import { PushTokenDto } from './push.dto.js';
+import { PushTokenDto, RegisterPushTokenDto } from './push.dto.js';
 import { PushService } from './push.service.js';
 
 // For the app (PIN-protected): a logged-in phone registers to hear about new web orders.
@@ -9,8 +9,8 @@ export class PushController {
 
   @Post()
   @HttpCode(204)
-  register(@Body() dto: PushTokenDto) {
-    return this.push.register(dto.token);
+  register(@Body() dto: RegisterPushTokenDto) {
+    return this.push.register(dto.token, dto.channelId ?? 'orders');
   }
 
   // On logout, so a phone that's no longer logged in stops getting order alerts.

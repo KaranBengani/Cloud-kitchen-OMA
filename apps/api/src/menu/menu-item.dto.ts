@@ -8,6 +8,11 @@ export class CreateMenuItemDto {
   @Length(1, 120)
   name: string;
 
+  @IsOptional()
+  @IsString()
+  @Length(0, 120)
+  nameHi?: string | null;
+
   @IsString()
   @Length(1, 60)
   category: string;

@@ -7,6 +7,7 @@ import { MENU_URL } from '@/lib/api';
 import { menuShareText, whatsappUrl } from '@/lib/bill';
 import { quantity, rupees } from '@/lib/format';
 import { useI18n } from '@/lib/i18n';
+import { useMenuNames } from '@/lib/menu-names';
 import { useMenu, useSaveMenuItem } from '@/lib/queries';
 import { colors, font, radius, serif, space } from '@/lib/theme';
 import type { MenuItem } from '@/lib/types';
@@ -14,6 +15,7 @@ import type { MenuItem } from '@/lib/types';
 // The app is the source of truth for prices (D8). The switch hides seasonal items from New Order.
 export default function MenuScreen() {
   const { t } = useI18n();
+  const { categoryName } = useMenuNames();
   const menu = useMenu();
   const save = useSaveMenuItem();
   const [query, setQuery] = useState('');
@@ -26,7 +28,9 @@ export default function MenuScreen() {
     const categories = [...new Set(menu.data.map((m) => m.category))];
     const q = query.trim().toLowerCase();
     const items = menu.data.filter(
-      (m) => (!category || m.category === category) && (!q || `${m.name} ${m.category}`.toLowerCase().includes(q)),
+      (m) =>
+        (!category || m.category === category) &&
+        (!q || `${m.name} ${m.nameHi ?? ''} ${m.category}`.toLowerCase().includes(q)),
     );
 
     return (
@@ -55,7 +59,7 @@ export default function MenuScreen() {
             <ChipRow>
               <Chip label={t('items.all')} selected={!category} onPress={() => setCategory(null)} />
               {categories.map((c) => (
-                <Chip key={c} label={c} selected={category === c} onPress={() => setCategory(c)} />
+                <Chip key={c} label={categoryName(c)} selected={category === c} onPress={() => setCategory(c)} />
               ))}
             </ChipRow>
           </View>
@@ -85,6 +89,7 @@ export default function MenuScreen() {
 
 function MenuRow({ item, onToggle }: { item: MenuItem; onToggle: (available: boolean) => void }) {
   const { t } = useI18n();
+  const { itemName } = useMenuNames();
   return (
     <Card
       onPress={() => router.push({ pathname: '/menu-item/[id]', params: { id: item.id } })}
@@ -92,7 +97,7 @@ function MenuRow({ item, onToggle }: { item: MenuItem; onToggle: (available: boo
     >
       <View style={styles.row}>
         <View style={styles.flex}>
-          <Text style={styles.name}>{item.name}</Text>
+          <Text style={styles.name}>{itemName(item)}</Text>
           <Text style={styles.muted}>
             {rupees(item.pricePaise)} / {item.unit}
             {item.minQty ? ` · ${t('menu.min', { qty: quantity(item.minQty, item.unit) })}` : ''}

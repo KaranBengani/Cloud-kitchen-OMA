@@ -166,3 +166,19 @@ the link don't wake the Neon database (compute is billed for time awake, not que
   install once; over-the-air updates for 1.0.0 stay JavaScript-only.
 - **Staging branch:** `oma-api-stg` deploys from the `staging` branch. Feature PRs merge into `staging` first, get
   tested in the Test app, then `staging` merges into `main` (production).
+
+## D21. Parents' feedback after a few days of use (Accepted, 12 Nov 2026; Claude builds; app 1.2.0)
+- **Hindi menu names:** `menu_items.name_hi`, filled for the current menu by a migration (matched on the English
+  name) and editable in the item form. Hindi mode shows it in the app; orders keep their English copy and look the
+  Hindi name up by `menuItemId`. Customers always get English (bills, messages, the web menu).
+- **Orders opens on the month calendar**, with web requests above it, as in the week view.
+- **Pick a customer from the phone's contacts** (`expo-contacts`, read-only: `WRITE_CONTACTS` blocked). A picked
+  contact who is already a customer is selected directly; otherwise the new customer form is filled in.
+- **Order chime:** an original 3-second chime (generated, no licence issue) on a new Android channel `new-orders`.
+  Plays once per notification at the phone's notification volume; silent and Do Not Disturb still mute it.
+  A ringing alert that repeats until opened (like Rapido's partner app) was not built: it needs a foreground service
+  and full-screen-intent permission, which is a lot of native code for a few orders a day.
+  Each phone registers the channel it has (`push_tokens.channel_id`), so 1.1.0 phones keep getting alerts on
+  `orders` until they update.
+- **Orders added in the app alert the other phones** ("New order #N added", same chime); the adding phone sends its
+  push token in `X-Push-Token` and is left out. A 1.1.0 phone doesn't send it, so it also alerts itself.
