@@ -17,7 +17,10 @@
         "backgroundColor": "#C46A22",
         "foregroundImage": "./assets/images/android-icon-foreground.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "blockedPermissions": [
+        "android.permission.WRITE_CONTACTS"
+      ]
     },
     "plugins": [
       "expo-router",
@@ -33,6 +36,7 @@
       "expo-localization",
       "@react-native-community/datetimepicker",
       "expo-sharing",
+      "expo-contacts",
       [
         "expo-notifications",
         {

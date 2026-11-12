@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { FlatList, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, FlatList, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Badge, Button, Card, ErrorState, Field, FormError, Icon, SearchBox, Skeleton } from '@/components/ui';
-import { ApiError } from '@/lib/api';
+import { api, ApiError } from '@/lib/api';
+import { type PickedContact, pickContact } from '@/lib/contacts';
 import { phone, rupees } from '@/lib/format';
 import { useI18n } from '@/lib/i18n';
 import { useCustomers, useSaveCustomer } from '@/lib/queries';
@@ -13,8 +14,9 @@ export function CustomerStep({ onSelect }: { onSelect: (customer: Customer) => v
   const { t } = useI18n();
   const [query, setQuery] = useState('');
   const [debounced, setDebounced] = useState('');
-  const [creating, setCreating] = useState(false);
+  const [creating, setCreating] = useState<PickedContact | null>(null);
   const customers = useCustomers(debounced);
+  const [picking, setPicking] = useState(false);
 
   // Wait for a pause in typing before searching, instead of one request per keystroke.
   useEffect(() => {
@@ -22,7 +24,42 @@ export function CustomerStep({ onSelect }: { onSelect: (customer: Customer) => v
     return () => clearTimeout(timer);
   }, [query]);
 
-  if (creating) return <NewCustomerForm prefill={query} onSaved={onSelect} onCancel={() => setCreating(false)} />;
+  // Typed text becomes the new customer's name or number, whichever it looks like.
+  const fromQuery = (): PickedContact => {
+    const text = query.trim();
+    return /^[\d\s+]{6,}$/.test(text) ? { name: '', phone: text } : { name: text, phone: null };
+  };
+
+  // A contact who is already a customer goes straight to items; anyone else opens the form filled in.
+  const fromContacts = async () => {
+    setPicking(true);
+    try {
+      const picked = await pickContact({ choosePhone: t('customer.choosePhone'), cancel: t('common.cancel') });
+      if (picked === 'denied') return Alert.alert(t('customer.contactsDenied'));
+      if (!picked) return;
+      const existing = picked.phone
+        ? (await api<Customer[]>(`/customers?q=${picked.phone}`)).find((c) => c.phone?.endsWith(picked.phone!))
+        : undefined;
+      if (existing) onSelect(existing);
+      else setCreating(picked);
+    } catch {
+      Alert.alert(t('common.error'));
+    } finally {
+      setPicking(false);
+    }
+  };
+
+  if (creating)
+    return (
+      // Keyed by the contact, so picking another one from inside the form starts it afresh.
+      <NewCustomerForm
+        key={`${creating.name}|${creating.phone}`}
+        prefill={creating}
+        onSaved={onSelect}
+        onCancel={() => setCreating(null)}
+        onPickContact={fromContacts}
+      />
+    );
 
   return (
     <FlatList
@@ -34,7 +71,14 @@ export function CustomerStep({ onSelect }: { onSelect: (customer: Customer) => v
       ListHeaderComponent={
         <View style={styles.header}>
           <SearchBox value={query} onChangeText={setQuery} placeholder={t('customer.search')} />
-          <Card onPress={() => setCreating(true)} style={styles.newCard}>
+          <Button
+            label={t('customer.fromContacts')}
+            icon="people-outline"
+            variant="secondary"
+            onPress={fromContacts}
+            loading={picking}
+          />
+          <Card onPress={() => setCreating(fromQuery())} style={styles.newCard}>
             <View style={styles.row}>
               <View style={styles.newIcon}>
                 <Icon name="person-add" color={colors.onPrimary} />
@@ -89,15 +133,16 @@ function NewCustomerForm({
   prefill,
   onSaved,
   onCancel,
+  onPickContact,
 }: {
-  prefill: string;
+  prefill: PickedContact;
   onSaved: (customer: Customer) => void;
   onCancel: () => void;
+  onPickContact: () => void;
 }) {
   const { t } = useI18n();
-  const looksLikePhone = /^[\d\s+]{6,}$/.test(prefill);
-  const [name, setName] = useState(looksLikePhone ? '' : prefill);
-  const [mobile, setMobile] = useState(looksLikePhone ? prefill : '');
+  const [name, setName] = useState(prefill.name);
+  const [mobile, setMobile] = useState(prefill.phone ?? '');
   const [address, setAddress] = useState('');
   const [error, setError] = useState<string | null>(null);
   const save = useSaveCustomer();
@@ -123,6 +168,7 @@ function NewCustomerForm({
   return (
     <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.list}>
       <Text style={styles.formTitle}>{t('customer.new')}</Text>
+      <Button label={t('customer.fromContacts')} icon="people-outline" variant="secondary" onPress={onPickContact} />
       <Field label={t('customer.name')} value={name} onChangeText={setName} autoFocus={!name} />
       <Field
         label={t('customer.phone')}
@@ -159,5 +205,11 @@ const styles = StyleSheet.create({
   name: { fontFamily: serif, fontSize: font.title, fontWeight: '700', color: colors.text },
   detail: { fontSize: font.label, color: colors.muted },
   muted: { fontSize: font.label, color: colors.muted },
-  formTitle: { fontFamily: serif, fontSize: font.heading, fontWeight: '700', color: colors.text, marginBottom: space.md },
+  formTitle: {
+    fontFamily: serif,
+    fontSize: font.heading,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: space.md,
+  },
 });
