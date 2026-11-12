@@ -4,6 +4,7 @@ import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-
 import { Badge, Button, Card, Chip, FormError, Icon } from '@/components/ui';
 import { longDate, parseISO, phone, quantity, rupees, time12, toISO } from '@/lib/format';
 import { type TranslationKey, useI18n } from '@/lib/i18n';
+import { useMenuNames } from '@/lib/menu-names';
 import { holidayOn, useHolidays } from '@/lib/queries';
 import { colors, font, radius, serif, space } from '@/lib/theme';
 import { PAYMENT_MODES } from '@/lib/types';
@@ -42,6 +43,7 @@ export function ReviewStep({
   onAddMore: () => void;
 }) {
   const { t, locale } = useI18n();
+  const { itemName } = useMenuNames();
   const [editing, setEditing] = useState<Editing>(null);
   // Warn, don't block: parents may take an order on a holiday by choice (D18).
   const holiday = holidayOn(useHolidays().data, draft.deliveryDate);
@@ -133,7 +135,7 @@ export function ReviewStep({
               >
                 <View style={styles.flex}>
                   <Text style={styles.lineName}>
-                    {line.name} · {quantity(line.qty, line.unit)}
+                    {itemName(line)} · {quantity(line.qty, line.unit)}
                   </Text>
                   <View style={styles.rateRow}>
                     {edited ? <Text style={styles.struck}>{rupees(line.menuPricePaise)}</Text> : null}
@@ -319,8 +321,8 @@ export function ReviewStep({
 
       {editing?.kind === 'price' ? (
         <AmountSheet
-          title={editing.line.name}
-          label={t('review.unitPrice', { name: editing.line.name })}
+          title={itemName(editing.line)}
+          label={t('review.unitPrice', { name: itemName(editing.line) })}
           initialPaise={unitPrice(editing.line)}
           onSave={(paise) => setLinePrice(editing.line, paise)}
           onClose={() => setEditing(null)}

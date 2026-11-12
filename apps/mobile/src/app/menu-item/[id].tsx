@@ -47,6 +47,7 @@ function ItemForm({ item, categories }: { item: MenuItem | null; categories: str
   const save = useSaveMenuItem();
   const remove = useDeleteMenuItem();
   const [name, setName] = useState(item?.name ?? '');
+  const [nameHi, setNameHi] = useState(item?.nameHi ?? '');
   const [category, setCategory] = useState(item?.category ?? '');
   const [addingCategory, setAddingCategory] = useState(false);
   const [unit, setUnit] = useState<MenuUnit>(item?.unit ?? 'kg');
@@ -67,6 +68,7 @@ function ItemForm({ item, categories }: { item: MenuItem | null; categories: str
       await save.mutateAsync({
         id: item?.id,
         name: name.trim(),
+        nameHi: nameHi.trim() || null,
         category: category.trim(),
         unit,
         pricePaise,
@@ -97,6 +99,7 @@ function ItemForm({ item, categories }: { item: MenuItem | null; categories: str
     <View style={styles.flex}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <Field label={t('item.name')} value={name} onChangeText={setName} />
+        <Field label={t('item.nameHi')} value={nameHi} onChangeText={setNameHi} placeholder="जैसे: दही वड़ा" />
 
         <Text style={styles.label}>{t('item.category')}</Text>
         <View style={styles.wrap}>

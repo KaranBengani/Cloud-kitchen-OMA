@@ -8,6 +8,7 @@ import { ApiError } from '@/lib/api';
 import { confirmationText, declineText, whatsappUrl } from '@/lib/bill';
 import { longDate, phone, quantity, rupees, shortDate, time12 } from '@/lib/format';
 import { useI18n } from '@/lib/i18n';
+import { useMenuNames } from '@/lib/menu-names';
 import { useDeletePayment, useOrder, useSetOrderStatus } from '@/lib/queries';
 import { colors, font, radius, serif, space } from '@/lib/theme';
 import type { Order, OrderStatus, Payment } from '@/lib/types';
@@ -38,6 +39,7 @@ export default function OrderDetailScreen() {
 
 function OrderDetail({ order, onReload }: { order: Order; onReload: () => void }) {
   const { t, locale } = useI18n();
+  const { itemName } = useMenuNames();
   const setStatus = useSetOrderStatus();
   const deletePayment = useDeletePayment();
   const [conflict, setConflict] = useState(false);
@@ -243,7 +245,7 @@ function OrderDetail({ order, onReload }: { order: Order; onReload: () => void }
               <View key={item.id} style={styles.line}>
                 <View style={styles.flex}>
                   <Text style={styles.strong}>
-                    {item.name} · {quantity(item.qty, item.unit)}
+                    {itemName(item)} · {quantity(item.qty, item.unit)}
                   </Text>
                   <View style={styles.rateRow}>
                     {edited ? <Text style={styles.struck}>{rupees(item.menuPricePaise)}</Text> : null}

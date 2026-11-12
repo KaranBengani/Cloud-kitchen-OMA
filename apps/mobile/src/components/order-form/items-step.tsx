@@ -3,6 +3,7 @@ import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Button, Card, Chip, ChipRow, EmptyState, ErrorState, Icon, SearchBox, Skeleton, Stepper } from '@/components/ui';
 import { quantity, rupees, stepFor } from '@/lib/format';
 import { useI18n } from '@/lib/i18n';
+import { useMenuNames } from '@/lib/menu-names';
 import { useMenu } from '@/lib/queries';
 import { colors, font, radius, serif, space } from '@/lib/theme';
 import type { MenuItem } from '@/lib/types';
@@ -23,6 +24,7 @@ export function ItemsStep({
   onNext: () => void;
 }) {
   const { t } = useI18n();
+  const { itemName, categoryName } = useMenuNames();
   const menu = useMenu();
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState<string | null>(null);
@@ -39,7 +41,7 @@ export function ItemsStep({
     (m) =>
       (m.isAvailable || inCart.has(`menu-${m.id}`)) &&
       (!category || m.category === category) &&
-      (!q || m.name.toLowerCase().includes(q)),
+      (!q || `${m.name} ${m.nameHi ?? ''}`.toLowerCase().includes(q)),
   );
   const customLines = lines.filter((l) => l.menuItemId == null);
 
@@ -63,7 +65,7 @@ export function ItemsStep({
             <ChipRow>
               <Chip label={t('items.all')} selected={!category} onPress={() => setCategory(null)} />
               {categories.map((c) => (
-                <Chip key={c} label={c} selected={category === c} onPress={() => setCategory(c)} />
+                <Chip key={c} label={categoryName(c)} selected={category === c} onPress={() => setCategory(c)} />
               ))}
             </ChipRow>
             <Card onPress={() => setCustomOpen(true)} style={styles.customCard}>
@@ -102,7 +104,7 @@ export function ItemsStep({
             <Card>
               <View style={styles.row}>
                 <View style={styles.flex}>
-                  <Text style={styles.name}>{item.name}</Text>
+                  <Text style={styles.name}>{itemName(item)}</Text>
                   {item.description ? <Text style={styles.muted}>{item.description}</Text> : null}
                   <Text style={styles.price}>
                     {rupees(item.pricePaise)} / {item.unit}
@@ -144,6 +146,7 @@ export function ItemsStep({
 // An item that's on the order: kg presets, stepper, line total and the soft minimum warning.
 function ItemCard({ line, onQty, custom }: { line: CartLine; onQty: (qty: number) => void; custom?: boolean }) {
   const { t } = useI18n();
+  const { itemName } = useMenuNames();
   const step = stepFor(line.unit);
   const belowMin = line.minQty != null && line.qty < line.minQty;
 
@@ -153,7 +156,7 @@ function ItemCard({ line, onQty, custom }: { line: CartLine; onQty: (qty: number
         <View style={styles.flex}>
           <Text style={styles.name}>
             <Text style={styles.dot}>● </Text>
-            {line.name}
+            {itemName(line)}
           </Text>
           {line.description ? <Text style={styles.muted}>{line.description}</Text> : null}
           <Text style={styles.price}>
