@@ -180,3 +180,5 @@ the link don't wake the Neon database (compute is billed for time awake, not que
   and full-screen-intent permission, which is a lot of native code for a few orders a day.
   Each phone registers the channel it has (`push_tokens.channel_id`), so 1.1.0 phones keep getting alerts on
   `orders` until they update.
+- **Orders added in the app alert the other phones** ("New order #N added", same chime); the adding phone sends its
+  push token in `X-Push-Token` and is left out. A 1.1.0 phone doesn't send it, so it also alerts itself.

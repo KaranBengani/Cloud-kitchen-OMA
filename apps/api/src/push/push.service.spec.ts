@@ -33,6 +33,16 @@ describe('PushService.newWebOrder', () => {
     expect(messages[1]).toMatchObject({ to: 'ExponentPushToken[b]', channelId: 'new-orders' });
   });
 
+  it('tells the other phones about an order added in the app, not the phone that added it', async () => {
+    const { service, repo, fetchMock } = setup(['ExponentPushToken[b]'], [{ status: 'ok' }]);
+    await service.newAppOrder(order, 'ExponentPushToken[a]');
+    expect(repo.find.mock.calls[0][0].where).toEqual({
+      token: expect.objectContaining({ _value: 'ExponentPushToken[a]' }),
+    });
+    const [message] = JSON.parse(fetchMock.mock.calls[0][1].body);
+    expect(message).toMatchObject({ to: 'ExponentPushToken[b]', title: 'New order #12 added', data: { orderId: 12 } });
+  });
+
   it('forgets phones that uninstalled the app', async () => {
     const { service, repo } = setup(
       ['ExponentPushToken[a]', 'ExponentPushToken[b]'],

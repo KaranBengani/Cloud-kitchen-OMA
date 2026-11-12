@@ -6,7 +6,7 @@ import { AndroidImportance } from 'expo-notifications';
 import { router } from 'expo-router';
 import { useEffect } from 'react';
 import { Platform } from 'react-native';
-import { api } from './api';
+import { api, setPushToken } from './api';
 
 // New web order alerts (DECISIONS.md D20). The server sends through Expo's push service, which hands the
 // message to Firebase Cloud Messaging; Android shows it even when the app is closed.
@@ -56,11 +56,13 @@ async function register(): Promise<void> {
   const { data: token } = await Notifications.getExpoPushTokenAsync({ projectId });
   await api('/push-tokens', { method: 'POST', body: JSON.stringify({ token, channelId: CHANNEL_ID }) });
   registeredToken = token;
+  setPushToken(token);
 }
 
 // Called by logout before the auth token is cleared, so this phone stops getting order alerts.
 export function unregisterPushToken(): void {
   if (!registeredToken) return;
+  setPushToken(null);
   api('/push-tokens', { method: 'DELETE', body: JSON.stringify({ token: registeredToken }) }).catch(() => {});
   registeredToken = null;
 }

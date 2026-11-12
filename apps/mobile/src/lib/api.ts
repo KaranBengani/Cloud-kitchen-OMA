@@ -19,6 +19,14 @@ export class ApiError extends Error {
 let token: string | null = null;
 let onUnauthorized: () => void = () => {};
 
+// This phone's push token, once registered (lib/notifications.ts). Sent along so the server can leave this phone
+// out when it alerts the family about an order added here.
+let pushToken: string | null = null;
+
+export function setPushToken(newPushToken: string | null) {
+  pushToken = newPushToken;
+}
+
 export function setAuth(newToken: string | null, handleUnauthorized?: () => void) {
   token = newToken;
   if (handleUnauthorized) onUnauthorized = handleUnauthorized;
@@ -34,6 +42,7 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
       headers: {
         'Content-Type': 'application/json',
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(pushToken ? { 'X-Push-Token': pushToken } : {}),
         ...init.headers,
       },
     });

@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { In, Not, Repository } from 'typeorm';
 import { dayLabel, menuPrice } from '../menu/menu-page.js';
 import { type PushChannel, PushToken } from './push-token.entity.js';
 
@@ -37,15 +37,28 @@ export class PushService {
   }
 
   // "New order request #12" on every family phone; tapping it opens the request (data.orderId).
-  // Never throws: a failed notification must not fail the customer's order, which is already saved.
-  async newWebOrder(order: NewWebOrder): Promise<void> {
+  newWebOrder(order: NewWebOrder): Promise<void> {
+    return this.send(`New order request #${order.orderId}`, order);
+  }
+
+  // An order typed into the app (feedback, 12 Nov 2026): the other phones hear about it; the phone that added it
+  // (its token comes with the request) doesn't.
+  newAppOrder(order: NewWebOrder, fromToken?: string): Promise<void> {
+    return this.send(`New order #${order.orderId} added`, order, fromToken);
+  }
+
+  // Never throws: a failed notification must not fail the order, which is already saved.
+  private async send(title: string, order: NewWebOrder, exceptToken?: string): Promise<void> {
     try {
-      const rows = await this.tokens.find({ select: { token: true, channelId: true } });
+      const rows = await this.tokens.find({
+        select: { token: true, channelId: true },
+        where: exceptToken ? { token: Not(exceptToken) } : {},
+      });
       if (!rows.length) return;
       const items = `${order.itemCount} ${order.itemCount === 1 ? 'item' : 'items'}`;
       const messages = rows.map(({ token, channelId }) => ({
         to: token,
-        title: `New order request #${order.orderId}`,
+        title,
         body: `${order.name} · ${dayLabel(order.deliveryDate)} · ${items} · ₹${menuPrice(order.totalPaise)}`,
         data: { orderId: order.orderId },
         // The Android channel that phone created (its sound lives there); "high" wakes a phone in battery saver.
