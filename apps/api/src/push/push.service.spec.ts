@@ -4,7 +4,8 @@ import { PushService } from './push.service.js';
 const order = { orderId: 12, name: 'Priya', deliveryDate: '2026-11-07', itemCount: 3, totalPaise: 45000 };
 
 function setup(tokens: string[], tickets: unknown[]) {
-  const repo = { find: vi.fn().mockResolvedValue(tokens.map((token) => ({ token }))), delete: vi.fn() };
+  const rows = tokens.map((token, i) => ({ token, channelId: i === 0 ? 'orders' : 'new-orders' }));
+  const repo = { find: vi.fn().mockResolvedValue(rows), delete: vi.fn() };
   const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ data: tickets }) });
   vi.stubGlobal('fetch', fetchMock);
   return { service: new PushService(repo as never), repo, fetchMock };
@@ -13,7 +14,7 @@ function setup(tokens: string[], tickets: unknown[]) {
 describe('PushService.newWebOrder', () => {
   afterEach(() => vi.unstubAllGlobals());
 
-  it('sends one message per phone, to the orders channel, with the order id for the tap', async () => {
+  it("sends one message per phone, to that phone's channel, with the order id for the tap", async () => {
     const { service, fetchMock } = setup(
       ['ExponentPushToken[a]', 'ExponentPushToken[b]'],
       [{ status: 'ok' }, { status: 'ok' }],
@@ -28,6 +29,8 @@ describe('PushService.newWebOrder', () => {
       data: { orderId: 12 },
       channelId: 'orders',
     });
+    // A 1.2.0 phone registered the channel with the custom order sound.
+    expect(messages[1]).toMatchObject({ to: 'ExponentPushToken[b]', channelId: 'new-orders' });
   });
 
   it('forgets phones that uninstalled the app', async () => {

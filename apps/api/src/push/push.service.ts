@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { dayLabel, menuPrice } from '../menu/menu-page.js';
-import { PushToken } from './push-token.entity.js';
+import { type PushChannel, PushToken } from './push-token.entity.js';
 
 // Expo's push service: free, no key needed for a project without "enhanced security". It hands each
 // message to Firebase Cloud Messaging for Android. https://docs.expo.dev/push-notifications/sending-notifications/
@@ -28,8 +28,8 @@ export class PushService {
   constructor(@InjectRepository(PushToken) private readonly tokens: Repository<PushToken>) {}
 
   // Upsert, so the app can register on every start without creating duplicates.
-  async register(token: string): Promise<void> {
-    await this.tokens.upsert({ token }, ['token']);
+  async register(token: string, channelId: PushChannel): Promise<void> {
+    await this.tokens.upsert({ token, channelId }, ['token']);
   }
 
   async unregister(token: string): Promise<void> {
@@ -40,16 +40,16 @@ export class PushService {
   // Never throws: a failed notification must not fail the customer's order, which is already saved.
   async newWebOrder(order: NewWebOrder): Promise<void> {
     try {
-      const rows = await this.tokens.find({ select: { token: true } });
+      const rows = await this.tokens.find({ select: { token: true, channelId: true } });
       if (!rows.length) return;
       const items = `${order.itemCount} ${order.itemCount === 1 ? 'item' : 'items'}`;
-      const messages = rows.map(({ token }) => ({
+      const messages = rows.map(({ token, channelId }) => ({
         to: token,
         title: `New order request #${order.orderId}`,
         body: `${order.name} · ${dayLabel(order.deliveryDate)} · ${items} · ₹${menuPrice(order.totalPaise)}`,
         data: { orderId: order.orderId },
-        // Matches the Android channel the app creates; "high" wakes a phone in battery saver.
-        channelId: 'orders',
+        // The Android channel that phone created (its sound lives there); "high" wakes a phone in battery saver.
+        channelId,
         priority: 'high',
         sound: 'default',
       }));

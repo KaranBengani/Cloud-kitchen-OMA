@@ -3,7 +3,7 @@
     "name": "Mummy's Kitchen",
     "slug": "oma",
     "owner": "karanbengani",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "oma",
@@ -40,7 +40,10 @@
       [
         "expo-notifications",
         {
-          "color": "#C46A22"
+          "color": "#C46A22",
+          "sounds": [
+            "./assets/sounds/new_order.wav"
+          ]
         }
       ]
     ],
