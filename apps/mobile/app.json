@@ -3,7 +3,7 @@
     "name": "Mummy's Kitchen",
     "slug": "oma",
     "owner": "karanbengani",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "oma",
@@ -17,7 +17,10 @@
         "backgroundColor": "#C46A22",
         "foregroundImage": "./assets/images/android-icon-foreground.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "blockedPermissions": [
+        "android.permission.WRITE_CONTACTS"
+      ]
     },
     "plugins": [
       "expo-router",
@@ -33,10 +36,14 @@
       "expo-localization",
       "@react-native-community/datetimepicker",
       "expo-sharing",
+      "expo-contacts",
       [
         "expo-notifications",
         {
-          "color": "#C46A22"
+          "color": "#C46A22",
+          "sounds": [
+            "./assets/sounds/new_order.wav"
+          ]
         }
       ]
     ],

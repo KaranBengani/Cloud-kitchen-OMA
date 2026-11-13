@@ -12,6 +12,7 @@ export type PaymentMode = (typeof PAYMENT_MODES)[number];
 export interface MenuItem {
   id: number;
   name: string;
+  nameHi: string | null;
   category: string;
   unit: MenuUnit;
   pricePaise: number;

@@ -6,16 +6,19 @@ import { AndroidImportance } from 'expo-notifications';
 import { router } from 'expo-router';
 import { useEffect } from 'react';
 import { Platform } from 'react-native';
-import { api } from './api';
+import { api, setPushToken } from './api';
 
 // New web order alerts (DECISIONS.md D20). The server sends through Expo's push service, which hands the
 // message to Firebase Cloud Messaging; Android shows it even when the app is closed.
 // In React web you'd use the Push API with a service worker; on a phone the OS owns delivery, and the app
 // only registers a token and decides what a tap does.
 
-// Must match `channelId` in the server's PushService. A channel is Android's per-app notification category:
-// its importance (sound, banner) is fixed when created, and the user can change it in system settings.
-const CHANNEL_ID = 'orders';
+// A channel is Android's per-app notification category: its importance and sound are fixed when created, and the
+// user can change them in system settings. 1.2.0 moved to 'new-orders' for the custom order chime (the file is
+// bundled by the expo-notifications plugin in app.json); the phone tells the server which channel it has.
+const CHANNEL_ID = 'new-orders';
+const OLD_CHANNEL_ID = 'orders';
+const ORDER_SOUND = 'new_order.wav';
 
 // While the app is open, still show the banner and play the sound: a parent may be on another screen.
 Notifications.setNotificationHandler({
@@ -39,9 +42,11 @@ async function register(): Promise<void> {
     await Notifications.setNotificationChannelAsync(CHANNEL_ID, {
       name: 'New orders',
       importance: AndroidImportance.HIGH,
-      sound: 'default',
+      sound: ORDER_SOUND,
       vibrationPattern: [0, 300, 200, 300],
     });
+    // Otherwise Settings would list two "New orders" categories after updating from 1.1.0.
+    await Notifications.deleteNotificationChannelAsync(OLD_CHANNEL_ID);
   }
   const current = await Notifications.getPermissionsAsync();
   const { granted } = current.granted ? current : await Notifications.requestPermissionsAsync();
@@ -49,13 +54,15 @@ async function register(): Promise<void> {
 
   const projectId = Constants.expoConfig?.extra?.eas?.projectId as string | undefined;
   const { data: token } = await Notifications.getExpoPushTokenAsync({ projectId });
-  await api('/push-tokens', { method: 'POST', body: JSON.stringify({ token }) });
+  await api('/push-tokens', { method: 'POST', body: JSON.stringify({ token, channelId: CHANNEL_ID }) });
   registeredToken = token;
+  setPushToken(token);
 }
 
 // Called by logout before the auth token is cleared, so this phone stops getting order alerts.
 export function unregisterPushToken(): void {
   if (!registeredToken) return;
+  setPushToken(null);
   api('/push-tokens', { method: 'DELETE', body: JSON.stringify({ token: registeredToken }) }).catch(() => {});
   registeredToken = null;
 }
